@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+
+# Node / Frontend
+node_modules/
+
+# Environment files
+.env
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
