@@ -58,6 +58,7 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 
 ## 📂 Project Structure
 
+```bash
 URL-Shortener-System/
 ├── backend/
 │   ├── app/
@@ -76,7 +77,7 @@ URL-Shortener-System/
 ├── docker-compose.yml
 ├── .gitignore
 └── README.md
-
+```
 
 ## 🔧 Branching Strategy
 
@@ -104,17 +105,55 @@ git push origin feature/docker-backend
 
 ### Option 1: Using Docker 🐳
 
-#### ✅ Prerequisites
+#### Prerequisites
 - Docker Desktop
 - Git
 
-#### 📥 Steps
+#### Steps
 ```bash
 git clone https://github.com/Sakshee21/URL-Shortener-System.git
 cd URL-Shortener-System
 docker compose up --build
 ```
-#### 🌐 Access the Application
+#### Access the Application
+- Application URL: http://localhost:8000
+
+
+### Option 2: Local Development (Virtual Environment)
+
+#### Prerequisites
+- Python 3.10+
+- Git
+
+#### Steps
+
+```bash
+git clone https://github.com/Sakshee21/URL-Shortener-System.git
+cd URL-Shortener-System/backend
+```
+#### Create and Activate Virtual Environment
+```bash
+python3 -m venv venv
+```
+**Activate venv:**
+
+**Linux / macOS / WSL**
+```bash
+source venv/bin/activate
+```
+**Windows (PowerShell)**
+```bash
+venv\Scripts\activate
+```
+#### Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+#### Run the Application
+```bash
+uvicorn app.main:app --reload
+```
+#### Access the Application
 - Application URL: http://localhost:8000
 
 ## 🐳 Docker Commands Reference
