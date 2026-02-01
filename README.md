@@ -178,7 +178,7 @@ docker compose logs -f        # View container logs
 
 ## 👩‍💻 Contributor
 
-- **Sakshee Ujjwal Kumat**
+ **Sakshee Ujjwal Kumat**
 
 ## 📄 License
 
