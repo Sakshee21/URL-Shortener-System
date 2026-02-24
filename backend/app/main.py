@@ -1,31 +1,14 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI
+from app.db.database import Base, engine
+from app.routes import auth
+from app.models import user   
 
 app = FastAPI()
 
-templates = Jinja2Templates(directory="app/templates")
+Base.metadata.create_all(bind=engine)
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.include_router(auth.router)
 
 @app.get("/")
-def home(request: Request):
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "short_url": None}
-    )
-
-@app.post("/shorten")
-def shorten_url(request: Request, long_url: str = Form(...)):
-    # TEMP logic (replace later with DB logic)
-    short_code = "abc123"
-    short_url = f"http://localhost:8000/{short_code}"
-
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "short_url": short_url,
-            "long_url": long_url
-        }
-    )
+def root():
+    return {"message": "Backend running successfully"}
