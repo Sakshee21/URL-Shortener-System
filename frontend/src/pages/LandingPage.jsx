@@ -1,115 +1,117 @@
-import { useState, useEffect } from "react";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import StatsSection from "../components/ui/StatsSection";
+import FeaturesSection from "../components/ui/FeaturesSection";
+import CTASection from "../components/ui/CTASection";
+
 import URLForm from "../components/url/URLForm";
 import ResultCard from "../components/url/ResultCard";
 
-function LandingPage() {
-  const [shortUrl, setShortUrl] = useState(null);
-  const [animate, setAnimate] = useState(false);
+import { useState } from "react";
 
-  // Page fade-in on mount
-  useEffect(() => {
-    setAnimate(true);
-  }, []);
+export default function LandingPage() {
+  const [shortUrl, setShortUrl] = useState("");
+
+  const handleShorten = (longUrl) => {
+    if (!longUrl) return;
+
+    const fakeShort =
+      "https://linksprint/" +
+      Math.random().toString(36).substring(2, 8);
+
+    setShortUrl(fakeShort);
+  };
 
   return (
-    <div
-        className="
-          relative min-h-screen flex flex-col overflow-hidden
-          bg-gradient-to-br
-          from-blue-100 via-white to-purple-100
-          dark:from-[#0f172a] dark:via-[#111827] dark:to-[#1e293b]
-          transition-all duration-700
-        "
-      >
+    <div className="relative min-h-screen overflow-hidden 
+      bg-gradient-to-br 
+      from-blue-50 via-white to-blue-100 
+      dark:from-[#0f172a] dark:via-[#111827] dark:to-black
+      transition-colors duration-500">
+      
 
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-  
-    {/* Left Blob */}
-      <div className="
-        absolute top-[-200px] left-[-200px]
-        w-[600px] h-[600px]
-        bg-blue-500/30
-        dark:bg-blue-600/25
-        rounded-full
-        blur-[120px]
-      " />
+      {/* Animated Background Blobs */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
 
-      {/* Right Blob */}
-      <div className="
-        absolute bottom-[-200px] right-[-200px]
-        w-[600px] h-[600px]
-        bg-purple-500/30
-        dark:bg-purple-600/25
-        rounded-full
-        blur-[120px]
-      " />
+          {/* Light Mode Blobs */}
+          <div className="relative min-h-screen overflow-hidden 
+            bg-gradient-to-br 
+            from-blue-50 via-white to-blue-100 
+            dark:from-slate-950 dark:via-slate-900 dark:to-slate-950
+            transition-colors duration-500"></div>
 
-    </div>
+          <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px]
+            bg-purple-400 rounded-full mix-blend-multiply
+            filter blur-3xl opacity-30 animate-pulse
+            dark:hidden">
+          </div>
 
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] 
-          bg-blue-500 opacity-20 dark:opacity-30 
-          rounded-full blur-[150px]" />
+          {/* Dark Mode Glow Blobs */}
+          <div className="absolute -top-40 -left-40 w-[500px] h-[500px]
+            bg-blue-600 rounded-full
+            filter blur-3xl opacity-20 animate-pulse
+            hidden dark:block">
+          </div>
+
+          <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px]
+            bg-purple-600 rounded-full
+            filter blur-3xl opacity-20 animate-pulse
+            hidden dark:block">
+
+         
+          </div>
+
       </div>
+
       <Navbar />
 
-      <main
-        className={`flex-1 flex flex-col items-center justify-center px-4 text-center 
-        transition-all duration-700 ease-out 
-        ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-      >
-        <div className="max-w-2xl w-full">
+      {/* HERO SECTION */}
+      <main className="relative z-10 flex flex-col items-center 
+        text-center px-6 py-28">
 
-          {/* Hero Section */}
-          <h1 className="text-4xl md:text-5xl font-extrabold 
-            text-slate-800 dark:text-white 
-            mb-6 leading-tight 
-            transition duration-500">
-            
-            Shorten Your Long Links <br />
-            <span className="
-              bg-gradient-to-r from-blue-500 to-indigo-500
-              bg-clip-text text-transparent
-              drop-shadow-lg
-            ">
-              In Seconds
-            </span>
-          </h1>
-
-          <p className="text-slate-600 dark:text-slate-300 text-lg mb-10 transition">
-            Fast, secure and reliable URL shortening with real-time analytics.
-          </p>
-
-          {/* Form Card */}
-          <div
-            className="
-              backdrop-blur-xl
-              bg-white/70 dark:bg-slate-800/70
-              border border-slate-200 dark:border-slate-700
-              p-6 rounded-2xl
-              shadow-xl
-              hover:shadow-blue-400/20 dark:hover:shadow-blue-900/40
-              hover:-translate-y-1
-              transition-all duration-300
-            "
-          >
-              <URLForm setShortUrl={setShortUrl} />
-            </div>
-
-          {/* Result Animation */}
-          {shortUrl && (
-            <div className="mt-6 animate-fadeIn">
-              <ResultCard shortUrl={shortUrl} />
-            </div>
-          )}
+        <div className="mb-6">
+          <span className="px-4 py-2 rounded-full 
+            bg-blue-100 dark:bg-slate-800
+            text-blue-600 dark:text-blue-400
+            text-sm font-medium tracking-wide
+            border border-blue-200 dark:border-slate-700">
+            • NOW WITH REAL-TIME ANALYTICS
+          </span>
         </div>
+
+        <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+          <span className="text-slate-900 dark:text-white">
+            Short links.
+          </span>
+          <br />
+          <span className="bg-gradient-to-r from-blue-500 to-purple-600 
+            bg-clip-text text-transparent drop-shadow-lg">
+            Big impact.
+          </span>
+        </h1>
+
+        <p className="text-lg md:text-xl 
+          text-slate-600 dark:text-slate-400 
+          max-w-2xl mb-12">
+          LinkSprint helps you create powerful, trackable short links in seconds.
+        </p>
+
+        {/* Proper Component Usage */}
+        <URLForm onShorten={handleShorten} />
+
+        {/* Show Result ONLY if shortUrl exists */}
+        {shortUrl && <ResultCard shortUrl={shortUrl} />}
+
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          Free to use · No account required · HTTPS secured
+        </p>
+
       </main>
 
+      <StatsSection />
+      <FeaturesSection />
+      <CTASection />
       <Footer />
     </div>
   );
 }
-
-export default LandingPage;

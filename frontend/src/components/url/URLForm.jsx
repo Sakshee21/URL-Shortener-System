@@ -1,55 +1,42 @@
 import { useState } from "react";
-import axios from "axios";
 
-function URLForm({ setShortUrl }) {
+export default function URLForm({ onShorten }) {
   const [longUrl, setLongUrl] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      const response = await axios.post("http://localhost:8000/shorten", {
-        url: longUrl,
-      });
-
-      setShortUrl(response.data.short_url);
-    } catch (error) {
-      alert("Error shortening URL");
-    }
-
-    setLoading(false);
+    onShorten(longUrl);
+    setLongUrl("");
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col w-full max-w-md">
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-3xl 
+        bg-white dark:bg-slate-800
+        rounded-2xl shadow-xl
+        border border-slate-200 dark:border-slate-700
+        flex items-center p-3 gap-3"
+    >
       <input
         type="url"
-        placeholder="Enter your long URL..."
         value={longUrl}
         onChange={(e) => setLongUrl(e.target.value)}
+        placeholder="Paste your long URL here..."
+        className="flex-1 bg-transparent outline-none 
+        px-4 py-3 text-slate-700 dark:text-white"
         required
-        className="p-3 border rounded mb-4"
       />
 
       <button
         type="submit"
-        disabled={loading}
-        className="
-          w-full py-3 rounded-xl font-semibold
-          bg-gradient-to-r from-blue-600 to-indigo-600
-          hover:from-blue-700 hover:to-indigo-700
-          text-white
-          transition-all duration-300
-          shadow-md hover:shadow-xl
-          hover:-translate-y-1
-        "
+        className="px-6 py-3 
+        bg-gradient-to-r from-blue-500 to-purple-600
+        text-white font-semibold rounded-xl
+        hover:scale-105 transition-all duration-300 shadow-md"
       >
-        {loading ? "Shortening..." : "Shorten URL"}
+        Shorten →
       </button>
     </form>
   );
 }
-
-export default URLForm;

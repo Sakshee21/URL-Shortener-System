@@ -1,28 +1,32 @@
-import { useState } from "react";
+import { FiCopy } from "react-icons/fi";
 
-function ResultCard({ shortUrl }) {
-  const [copied, setCopied] = useState(false);
-
+export default function ResultCard({ shortUrl }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(shortUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex justify-between items-center">
-      <span className="text-blue-600 dark:text-blue-400 font-medium">
+    <div className="mt-6 w-full max-w-3xl 
+      bg-white dark:bg-slate-800
+      rounded-2xl shadow-md
+      border border-slate-200 dark:border-slate-700
+      flex items-center justify-between p-4">
+
+      <a
+        href={shortUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="text-blue-600 dark:text-blue-400 font-medium"
+      >
         {shortUrl}
-      </span>
+      </a>
 
       <button
         onClick={handleCopy}
-        className="text-sm bg-blue-600 text-white px-4 py-1 rounded-lg hover:bg-blue-700 transition"
+        className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition"
       >
-        {copied ? "Copied!" : "Copy"}
+        <FiCopy size={18} />
       </button>
     </div>
   );
 }
-
-export default ResultCard;

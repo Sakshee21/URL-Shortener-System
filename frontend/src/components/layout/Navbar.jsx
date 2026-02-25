@@ -6,8 +6,9 @@ function Navbar() {
     <nav className="bg-white dark:bg-slate-900 shadow-sm border-b dark:border-slate-700 transition">
       <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
         
-        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 transition">
-          URL Shortener
+        <h1 className="text-xl font-extrabold tracking-tight">
+          <span className="text-blue-600">Link</span>
+          <span className="dark:text-white">Sprint</span>
         </h1>
 
         <div className="flex items-center gap-4">
