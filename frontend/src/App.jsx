@@ -3,8 +3,8 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
-//import AnalyticsPage from "./pages/AnalyticsPage";
-//import AdminDashboard from "./pages/AdminDashboard";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -14,6 +14,8 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );
