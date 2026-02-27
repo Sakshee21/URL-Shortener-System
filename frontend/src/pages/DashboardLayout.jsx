@@ -78,11 +78,16 @@ export function Sidebar({ dark, onToggleTheme, activePage, isAdmin = false, mobi
   ];
   const adminLinks = [
     { id: "admin", label: "Admin Panel", icon: Icons.shield },
-    { id: "users", label: "Users",       icon: Icons.users },
   ];
 
-  const links = isAdmin ? [...userLinks, ...adminLinks] : userLinks;
 
+  let links;
+
+  if (isAdmin) {
+    links = adminLinks;
+  } else {
+    links = userLinks;
+  }
   const sidebarBg     = dark ? "bg-[#0a0f1e] border-slate-800" : "bg-white border-slate-100";
   const linkActive    = dark ? "bg-blue-500/15 text-blue-400 border-r-2 border-blue-500" : "bg-blue-50 text-blue-600 border-r-2 border-blue-500";
   const linkInactive  = dark ? "text-slate-400 hover:bg-slate-800/60 hover:text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800";
