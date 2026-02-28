@@ -82,9 +82,18 @@ URL-Shortener-System/
 ## 📐 Software Design
 
 ### Architecture Diagrams
-- [System Architecture](docs/design/diagrams/high_level_arch.png)
-- [Frontend Component Diagram](docs/design/diagrams/frontend_components.png)
 
+## High Level Architecture Diagram
+![System Architecture](docs/design/diagrams/high_level_arch.png)
+
+This system follows a Client–Server architecture with a layered monolithic backend to ensure clear separation of concerns and strong maintainability. Business logic, routing, and data access are decoupled to minimize coupling, simplify testing, and allow isolated modifications without affecting unrelated components. Stateless JWT authentication and modular service design enable horizontal scalability and smooth evolution toward microservices if required. The structured layering also improves readability, debugging efficiency, and long-term extensibility as new features or integrations are introduced.
+
+## Frontend React Components Interaction Diagram
+![Frontend Component Diagram](docs/design/diagrams/frontend_components.png)
+
+The frontend is structured using a modular, layered component architecture in React. Pages handle routing and compose reusable layout and UI components, while feature-specific components (e.g., URLForm, ResultCard) encapsulate core functionality. Shared structures like DashboardLayout, Navbar, and Footer reduce duplication and maintain visual consistency.
+
+This design improves maintainability by isolating responsibilities within well-defined components, making changes localized and predictable. New features can be added by extending existing modules rather than restructuring the system. The clear separation between layout, UI, and feature logic ensures the application remains scalable and easy to refactor over time.
 
 ## 🖼 Wireframes
 
