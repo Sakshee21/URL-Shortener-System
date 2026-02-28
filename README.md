@@ -79,6 +79,39 @@ URL-Shortener-System/
 └── README.md
 ```
 
+## 📐 Software Design
+
+### Architecture Diagrams
+- [System Architecture](docs/design/diagrams/high_level_arch.png)
+- [Frontend Component Diagram](docs/design/diagrams/frontend_components.png)
+
+
+## 🖼 Wireframes
+
+### Landing
+![Landing 1](docs/design/wireframes/landing-1.png)
+![Landing 2](docs/design/wireframes/landing-2.png)
+![Landing 3](docs/design/wireframes/landing-3.png)
+
+### Sign Up
+![Sign Up](docs/design/wireframes/signup.png)
+
+### Login
+![Login](docs/design/wireframes/login.png)
+
+### User Dashboard
+![Dashboard 1](docs/design/wireframes/dashboard-1.png)
+![Dashboard 2](docs/design/wireframes/dashboard-2.png)
+
+### User Analytics
+![Analytics 1](docs/design/wireframes/analytics-1.png)
+![Analytics 2](docs/design/wireframes/analytics-2.png)
+![Analytics 3](docs/design/wireframes/analytics-3.png)
+
+### Admin Dashboard
+![Admin 1](docs/design/wireframes/admin-1.png)
+![Admin 2](docs/design/wireframes/admin-2.png)
+
 ## 🔧 Branching Strategy
 
 This project follows **GitHub Flow**.
