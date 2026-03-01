@@ -31,13 +31,14 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 ### Backend
 - Python 3.10
 - FastAPI
-- Jinja2 (for server-side templates)
 - SQLite
+- JWT Authentication
 
 ### Frontend
-- HTML
-- CSS
+- React + Vite
 - JavaScript
+- HTML5
+- Tailwind CSS
 
 ### DevOps & Tooling
 - Docker & Docker Compose
@@ -63,23 +64,44 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 ## 📂 Project Structure
 
 ```bash
-URL-Shortener-System/
+URL-SHORTENER-SYSTEM/
 ├── backend/
 │   ├── app/
-│   │   ├── templates/
-│   │   ├── static/
+│   │   ├── core/
+│   │   ├── db/
+│   │   ├── dependencies/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── utils/
 │   │   └── main.py
-│   ├── requirements.txt
+│   ├── .dockerignore
 │   ├── Dockerfile
-│   └── .dockerignore
-│
+│   └── requirements.txt
+├── docs/
 ├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── styles/
+│   │   ├── App.css
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
 │   ├── index.html
-│   ├── style.css
-│   └── script.js
-│
-├── docker-compose.yml
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   └── vite.config.js
 ├── .gitignore
+├── docker-compose.yml
+├── LICENSE
 └── README.md
 ```
 ---
@@ -137,7 +159,7 @@ This design improves maintainability by isolating responsibilities within well-d
 
 After login, the user lands on the Dashboard.
 
-##### Metrics Section
+##### i)Metrics Section
 
 Displays:
 
@@ -149,14 +171,14 @@ Displays:
 *(Informational cards — no interaction required)*
 
 
-##### Create New Short Link
+##### ii)Create New Short Link
 
 - Enter a destination URL.
 - Click **"Create Short Link"** to simulate generating a new short link.
 - The newly created link appears in the links table below.
 
 
-##### Your Links Table
+##### iii)Your Links Table
 
 Users can:
 
@@ -170,12 +192,12 @@ Users can:
 
 ### Analytics Section
 
-##### Analytics Dashboard
+##### i)Analytics Dashboard
 
 Accessible from sidebar navigation.
 
 
-##### Top Metrics
+##### ii)Top Metrics
 
 Displays:
 
@@ -184,27 +206,27 @@ Displays:
 - Avg. Clicks per Day  
 - Last Accessed Link  
 
-##### Clicks Over Time
+##### iii)Clicks Over Time
 
 - Use the filter toggle (**7d / 30d / 90d**) to simulate changing the time range.
 
-##### Top Performing Links
+##### iv)Top Performing Links
 
 - Displays ranked list of highest-performing links.
 
 
-##### Geographic Breakdown
+##### v)Geographic Breakdown
 
 - Horizontal bar chart placeholder showing simulated country-based distribution.
 
 
-##### Device & Browser Breakdown
+##### vi)Device & Browser Breakdown
 
 - Donut chart placeholder for device distribution.
 - Horizontal list for browser usage.
 
 
-##### Recent Activity
+##### vii)Recent Activity
 
 - Activity log showing simulated recent user interactions.
 
@@ -216,7 +238,7 @@ Displays:
 Accessible only through admin login.
 
 
-##### Platform Metrics
+##### i)Platform Metrics
 
 Displays:
 
@@ -226,16 +248,16 @@ Displays:
 - Suspended Accounts  
 
 
-##### User Growth
+##### ii)User Growth
 
 - Line chart placeholder simulating user growth over time.
 
 
-##### System Events
+##### iii)System Events
 
 - Activity list showing simulated system-level actions.
 
-##### User Management Table
+##### iv)User Management Table
 
 Includes:
 
@@ -386,7 +408,7 @@ docker compose logs -f        # View container logs
 |-------------|-------------------------------|
 | Python 3.10 | Backend runtime               |
 | FastAPI     | Web framework                 |
-| Jinja2      | Template rendering            |
+| React       | Frontend UI                   |
 | Docker      | Containerization              |
 | Git         | Version control               |
 | VS Code     | Code editor                   |
