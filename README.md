@@ -81,14 +81,12 @@ URL-Shortener-System/
 
 ## 📐 Software Design
 
-### Architecture Diagrams
-
-### High Level Architecture Diagram
+### High Level Architecture Diagram:
 ![System Architecture](docs/design/diagrams/high_level_arch.png)
 
 This system follows a Client–Server architecture with a layered monolithic backend to ensure clear separation of concerns and strong maintainability. Business logic, routing, and data access are decoupled to minimize coupling, simplify testing, and allow isolated modifications without affecting unrelated components. Stateless JWT authentication and modular service design enable horizontal scalability and smooth evolution toward microservices if required. The structured layering also improves readability, debugging efficiency, and long-term extensibility as new features or integrations are introduced.
 
-### Frontend React Components Interaction Diagram
+### Frontend React Components Interaction Diagram:
 ![Frontend Component Diagram](docs/design/diagrams/frontend_components.png)
 
 The frontend is structured using a modular, layered component architecture in React. Pages handle routing and compose reusable layout and UI components, while feature-specific components (e.g., URLForm, ResultCard) encapsulate core functionality. Shared structures like DashboardLayout, Navbar, and Footer reduce duplication and maintain visual consistency.
@@ -97,27 +95,231 @@ This design improves maintainability by isolating responsibilities within well-d
 
 ## 🖼 Wireframes
 
-### Landing
+# 🧩 Wireframes
+
+These wireframes represent the structural layout and interaction flow of the system.  
+They illustrate navigation flow, hierarchy, and component placement, but **do not represent the final visual UI design**.
+
+🔗 **Prototype Link:**  
+[Add your Figma Prototype Link Here]
+
+---
+
+# 🚀 Prototype Flow Instructions
+
+---
+
+## 🌐 Public Section
+
+### 🏠 Landing Page
+
+- Paste a long URL in the input field.
+- Click **"Shorten"** to simulate generating a short link.
+- Click **"Login"** in the navigation bar to navigate to the Login page.
+- Click **"Register"** to navigate to the Sign Up page.
+
+---
+
+## 🔐 Authentication Section
+
+### 📝 Sign Up Page
+
+- Enter email, password, and confirm password.
+- Click **"Sign Up"** to simulate account creation.
+- User is redirected to the **User Dashboard** after successful registration.
+- Click **"Login"** below the form to navigate to the Login page.
+
+---
+
+### 🔑 Login Page
+
+- Enter email and password.
+- Click **"Login"** to simulate authentication.
+
+**Role-Based Routing Simulation:**
+
+- Standard user login → Redirects to **User Dashboard**
+- Admin login → Redirects to **Admin Panel**
+
+---
+
+# 👤 User Section
+
+## 📊 User Dashboard
+
+After login, the user lands on the Dashboard.
+
+---
+
+### 📈 Metrics Section
+
+Displays:
+
+- Total Links  
+- Total Clicks  
+- Active Links  
+- Top Link Clicks  
+
+*(Informational cards — no interaction required)*
+
+---
+
+### ➕ Create New Short Link
+
+- Enter a destination URL.
+- Click **"Create Short Link"** to simulate generating a new short link.
+- The newly created link appears in the links table below.
+
+---
+
+### 📋 Your Links Table
+
+Users can:
+
+- Click **All / Active / Inactive** tabs to filter links.
+- Click the copy icon beside a short URL to simulate copying.
+- Click the action menu (three dots) to simulate edit/delete options.
+- Use pagination buttons (**Previous / Next**) to simulate table navigation.
+- Toggle **Dark Mode** in the sidebar.
+- Click **Sign Out** to return to the Landing page.
+
+---
+
+# 📊 Analytics Section
+
+## 📈 Analytics Dashboard
+
+Accessible from sidebar navigation.
+
+---
+
+### 📌 Top Metrics
+
+Displays:
+
+- Total Clicks  
+- Unique Visitors  
+- Avg. Clicks per Day  
+- Last Accessed Link  
+
+---
+
+### 📉 Clicks Over Time
+
+- Use the filter toggle (**7d / 30d / 90d**) to simulate changing the time range.
+
+---
+
+### 🏆 Top Performing Links
+
+- Displays ranked list of highest-performing links.
+
+---
+
+### 🌍 Geographic Breakdown
+
+- Horizontal bar chart placeholder showing simulated country-based distribution.
+
+---
+
+### 💻 Device & Browser Breakdown
+
+- Donut chart placeholder for device distribution.
+- Horizontal list for browser usage.
+
+---
+
+### 🕒 Recent Activity
+
+- Activity log showing simulated recent user interactions.
+
+---
+
+# 🛠 Admin Section
+
+## 🧑‍💼 Admin Panel
+
+Accessible only through admin login.
+
+---
+
+### 📊 Platform Metrics
+
+Displays:
+
+- Total Users  
+- Total Links  
+- Total Clicks  
+- Suspended Accounts  
+
+---
+
+### 📈 User Growth
+
+- Line chart placeholder simulating user growth over time.
+
+---
+
+### 📑 System Events
+
+- Activity list showing simulated system-level actions.
+
+---
+
+### 👥 User Management Table
+
+Includes:
+
+- User Name  
+- Email  
+- Links  
+- Clicks  
+- Joined Date  
+- Status  
+- Actions  
+
+Users can:
+
+- Use search bar to simulate filtering users.
+- Click status pill to simulate changing status.
+- Click action icons to simulate edit/suspend.
+- Switch between **Users** and **Recent Links** tabs.
+- Navigate using pagination controls.
+
+---
+
+# 🔄 Navigation Summary
+
+The prototype follows a structured role-based navigation flow:
+
+Landing Page
+→ Authentication
+→ User Dashboard (Standard User)
+→ Admin Panel (Admin Role)
+
+The sidebar remains consistent across all authenticated pages to ensure usability and continuity.
+
+### Landing:
 ![Landing 1](docs/design/wireframes/landing-1.png)
 ![Landing 2](docs/design/wireframes/landing-2.png)
 ![Landing 3](docs/design/wireframes/landing-3.png)
 
-### Sign Up
+### Sign Up:
 ![Sign Up](docs/design/wireframes/signup.png)
 
-### Login
+### Login:
 ![Login](docs/design/wireframes/login.png)
 
-### User Dashboard
+### User Dashboard:
 ![Dashboard 1](docs/design/wireframes/dashboard-1.png)
 ![Dashboard 2](docs/design/wireframes/dashboard-2.png)
 
-### User Analytics
+### User Analytics:
 ![Analytics 1](docs/design/wireframes/analytics-1.png)
 ![Analytics 2](docs/design/wireframes/analytics-2.png)
 ![Analytics 3](docs/design/wireframes/analytics-3.png)
 
-### Admin Dashboard
+### Admin Dashboard:
 ![Admin 1](docs/design/wireframes/admin-1.png)
 ![Admin 2](docs/design/wireframes/admin-2.png)
 
