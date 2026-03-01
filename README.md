@@ -93,45 +93,29 @@ The frontend is structured using a modular, layered component architecture in Re
 
 This design improves maintainability by isolating responsibilities within well-defined components, making changes localized and predictable. New features can be added by extending existing modules rather than restructuring the system. The clear separation between layout, UI, and feature logic ensures the application remains scalable and easy to refactor over time.
 
-## 🖼 Wireframes
 
-# 🧩 Wireframes
+##  Prototype Flow Instructions
 
-These wireframes represent the structural layout and interaction flow of the system.  
-They illustrate navigation flow, hierarchy, and component placement, but **do not represent the final visual UI design**.
+## Public Section
 
-🔗 **Prototype Link:**  
-[Add your Figma Prototype Link Here]
-
----
-
-# 🚀 Prototype Flow Instructions
-
----
-
-## 🌐 Public Section
-
-### 🏠 Landing Page
+### Landing Page
 
 - Paste a long URL in the input field.
 - Click **"Shorten"** to simulate generating a short link.
 - Click **"Login"** in the navigation bar to navigate to the Login page.
 - Click **"Register"** to navigate to the Sign Up page.
 
----
+## Authentication Section
 
-## 🔐 Authentication Section
-
-### 📝 Sign Up Page
+### Sign Up Page
 
 - Enter email, password, and confirm password.
 - Click **"Sign Up"** to simulate account creation.
 - User is redirected to the **User Dashboard** after successful registration.
 - Click **"Login"** below the form to navigate to the Login page.
 
----
 
-### 🔑 Login Page
+### Login Page
 
 - Enter email and password.
 - Click **"Login"** to simulate authentication.
@@ -141,17 +125,14 @@ They illustrate navigation flow, hierarchy, and component placement, but **do no
 - Standard user login → Redirects to **User Dashboard**
 - Admin login → Redirects to **Admin Panel**
 
----
 
-# 👤 User Section
+##  User Section
 
-## 📊 User Dashboard
+##  User Dashboard
 
 After login, the user lands on the Dashboard.
 
----
-
-### 📈 Metrics Section
+### Metrics Section
 
 Displays:
 
@@ -162,17 +143,15 @@ Displays:
 
 *(Informational cards — no interaction required)*
 
----
 
-### ➕ Create New Short Link
+###  Create New Short Link
 
 - Enter a destination URL.
 - Click **"Create Short Link"** to simulate generating a new short link.
 - The newly created link appears in the links table below.
 
----
 
-### 📋 Your Links Table
+### Your Links Table
 
 Users can:
 
@@ -183,17 +162,15 @@ Users can:
 - Toggle **Dark Mode** in the sidebar.
 - Click **Sign Out** to return to the Landing page.
 
----
 
-# 📊 Analytics Section
+## Analytics Section
 
-## 📈 Analytics Dashboard
+## Analytics Dashboard
 
 Accessible from sidebar navigation.
 
----
 
-### 📌 Top Metrics
+### Top Metrics
 
 Displays:
 
@@ -202,48 +179,39 @@ Displays:
 - Avg. Clicks per Day  
 - Last Accessed Link  
 
----
-
-### 📉 Clicks Over Time
+### Clicks Over Time
 
 - Use the filter toggle (**7d / 30d / 90d**) to simulate changing the time range.
 
----
-
-### 🏆 Top Performing Links
+### Top Performing Links
 
 - Displays ranked list of highest-performing links.
 
----
 
-### 🌍 Geographic Breakdown
+### Geographic Breakdown
 
 - Horizontal bar chart placeholder showing simulated country-based distribution.
 
----
 
-### 💻 Device & Browser Breakdown
+### Device & Browser Breakdown
 
 - Donut chart placeholder for device distribution.
 - Horizontal list for browser usage.
 
----
 
-### 🕒 Recent Activity
+### Recent Activity
 
 - Activity log showing simulated recent user interactions.
 
----
 
-# 🛠 Admin Section
+## Admin Section
 
-## 🧑‍💼 Admin Panel
+## Admin Panel
 
 Accessible only through admin login.
 
----
 
-### 📊 Platform Metrics
+### Platform Metrics
 
 Displays:
 
@@ -252,21 +220,17 @@ Displays:
 - Total Clicks  
 - Suspended Accounts  
 
----
 
-### 📈 User Growth
+### User Growth
 
 - Line chart placeholder simulating user growth over time.
 
----
 
-### 📑 System Events
+### System Events
 
 - Activity list showing simulated system-level actions.
 
----
-
-### 👥 User Management Table
+### User Management Table
 
 Includes:
 
@@ -286,18 +250,10 @@ Users can:
 - Switch between **Users** and **Recent Links** tabs.
 - Navigate using pagination controls.
 
----
+## Wireframe Images
 
-# 🔄 Navigation Summary
-
-The prototype follows a structured role-based navigation flow:
-
-Landing Page
-→ Authentication
-→ User Dashboard (Standard User)
-→ Admin Panel (Admin Role)
-
-The sidebar remains consistent across all authenticated pages to ensure usability and continuity.
+These wireframes represent the structural layout and interaction flow of the system.  
+They illustrate navigation flow, hierarchy, and component placement, but **do not represent the final visual UI design**.
 
 ### Landing:
 ![Landing 1](docs/design/wireframes/landing-1.png)
