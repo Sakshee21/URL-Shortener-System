@@ -1,0 +1,7 @@
+# One domain per line. Subdomains are blocked automatically.
+# Example: if you add example.com, then foo.example.com is also blocked.
+
+malware.test
+phishing.test
+badsite.example
+example.com

@@ -5,6 +5,7 @@ import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import PreviewWarningPage from "./pages/PreviewWarningPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/preview/:shortCode" element={<PreviewWarningPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route

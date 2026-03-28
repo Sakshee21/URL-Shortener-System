@@ -101,3 +101,13 @@ export async function getMyUrls(options = {}) {
 	});
 }
 
+export async function getUrlPreview(shortCode) {
+	return apiRequest(`/urls/preview/${shortCode}`, {
+		method: "GET",
+	});
+}
+
+export function getContinueRedirectUrl(shortCode) {
+	return `${API_BASE_URL}/urls/${shortCode}/go`;
+}
+

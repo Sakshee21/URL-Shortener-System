@@ -1,12 +1,13 @@
 from uuid import uuid4
-from datetime import datetime
 from urllib.parse import urlparse
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.config import BASE_URL
+from app.core.config import BASE_URL, MIN_SHORT_CODE_LENGTH
 from app.models.url import URL
+from app.services.preview_service import fetch_preview_metadata
+from app.services.security_service import assert_url_not_blacklisted, score_url_risk
 
 BASE62_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -48,7 +49,8 @@ def encode_base62(value: int) -> str:
         value, remainder = divmod(value, base)
         encoded.append(BASE62_ALPHABET[remainder])
 
-    return "".join(reversed(encoded))
+    encoded_value = "".join(reversed(encoded))
+    return encoded_value.rjust(MIN_SHORT_CODE_LENGTH, BASE62_ALPHABET[0])
 
 
 def _get_existing_url(db: Session, original_url: str) -> URL | None:
@@ -57,19 +59,61 @@ def _get_existing_url(db: Session, original_url: str) -> URL | None:
 
 def create_short_url(db: Session, original_url: str, user_id: int | None = None) -> URL:
     validated_url = validate_original_url(original_url)
+    parsed = urlparse(validated_url)
+
+    assert_url_not_blacklisted(validated_url)
+    risk_score, risk_level = score_url_risk(validated_url)
+    preview = fetch_preview_metadata(validated_url)
+
+    if not preview.get("page_title"):
+        preview["page_title"] = parsed.netloc
 
     existing_url = _get_existing_url(db, validated_url)
     if existing_url:
+        updated = False
+
         # Attach ownership when a guest-created URL is first reused by an authenticated user.
         if user_id and existing_url.user_id is None:
             existing_url.user_id = user_id
+            updated = True
+
+        if existing_url.risk_score != risk_score or existing_url.risk_level != risk_level:
+            existing_url.risk_score = risk_score
+            existing_url.risk_level = risk_level
+            updated = True
+
+        # Fill missing metadata progressively for older records.
+        if not existing_url.page_title and preview.get("page_title"):
+            existing_url.page_title = preview["page_title"]
+            updated = True
+        if not existing_url.page_description and preview.get("page_description"):
+            existing_url.page_description = preview["page_description"]
+            updated = True
+        if not existing_url.favicon_url and preview.get("favicon_url"):
+            existing_url.favicon_url = preview["favicon_url"]
+            updated = True
+        if not existing_url.preview_image_url and preview.get("preview_image_url"):
+            existing_url.preview_image_url = preview["preview_image_url"]
+            updated = True
+
+        if updated:
             db.commit()
             db.refresh(existing_url)
 
         return existing_url
 
     temp_code = f"tmp_{uuid4().hex}"
-    url_entry = URL(original_url=validated_url, short_code=temp_code, user_id=user_id)
+    url_entry = URL(
+        original_url=validated_url,
+        short_code=temp_code,
+        user_id=user_id,
+        risk_level=risk_level,
+        risk_score=risk_score,
+        page_title=preview.get("page_title"),
+        page_description=preview.get("page_description"),
+        favicon_url=preview.get("favicon_url"),
+        preview_image_url=preview.get("preview_image_url"),
+    )
 
     db.add(url_entry)
     db.commit()
@@ -87,17 +131,13 @@ def build_short_url(short_code: str) -> str:
     return f"{BASE_URL.rstrip('/')}/{short_code}"
 
 
-def get_original_url_by_short_code(db: Session, short_code: str) -> str:
+def get_url_by_short_code(db: Session, short_code: str) -> URL:
     url_entry = db.query(URL).filter(URL.short_code == short_code).first()
 
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
 
-    url_entry.click_count += 1
-    url_entry.last_accessed_at = datetime.utcnow()
-    db.commit()
-
-    return url_entry.original_url
+    return url_entry
 
 
 def get_urls_by_user_id(db: Session, user_id: int) -> list[URL]:
