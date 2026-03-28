@@ -8,18 +8,31 @@ import URLForm from "../components/url/URLForm";
 import ResultCard from "../components/url/ResultCard";
 
 import { useState } from "react";
+import { shortenUrl } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LandingPage() {
   const [shortUrl, setShortUrl] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { token } = useAuth();
 
-  const handleShorten = (longUrl) => {
+  const handleShorten = async (longUrl) => {
     if (!longUrl) return;
+    setError("");
+    setIsLoading(true);
 
-    const fakeShort =
-      "https://linksprint/" +
-      Math.random().toString(36).substring(2, 8);
-
-    setShortUrl(fakeShort);
+    try {
+      const result = await shortenUrl(longUrl, {
+        includeAuth: Boolean(token),
+        token,
+      });
+      setShortUrl(result.short_url);
+    } catch (err) {
+      setError(err.message || "Unable to shorten URL right now");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,6 +111,18 @@ export default function LandingPage() {
 
         {/* Proper Component Usage */}
         <URLForm onShorten={handleShorten} />
+
+        {isLoading && (
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Shortening URL...
+          </p>
+        )}
+
+        {error && (
+          <p className="mt-4 text-sm text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
 
         {/* Show Result ONLY if shortUrl exists */}
         {shortUrl && <ResultCard shortUrl={shortUrl} />}

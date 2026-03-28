@@ -71,7 +71,7 @@ export function ThemeToggle({ dark, onToggle }) {
 }
 
 
-export function Sidebar({ dark, onToggleTheme, activePage, isAdmin = false, mobileOpen, onMobileClose }) {
+export function Sidebar({ dark, onToggleTheme, activePage, isAdmin = false, mobileOpen, onMobileClose, onSignOut }) {
   const userLinks = [
     { id: "dashboard", label: "Dashboard", icon: Icons.link },
     { id: "analytics", label: "Analytics",  icon: Icons.chart },
@@ -139,7 +139,7 @@ export function Sidebar({ dark, onToggleTheme, activePage, isAdmin = false, mobi
             <span className={`text-xs ${dark ? "text-slate-500" : "text-slate-400"}`}>{dark ? "Dark mode" : "Light mode"}</span>
             <ThemeToggle dark={dark} onToggle={onToggleTheme} />
           </div>
-          <button className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${dark ? "text-slate-400 hover:bg-red-500/10 hover:text-red-400" : "text-slate-500 hover:bg-red-50 hover:text-red-500"}`}>
+          <button onClick={onSignOut} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${dark ? "text-slate-400 hover:bg-red-500/10 hover:text-red-400" : "text-slate-500 hover:bg-red-50 hover:text-red-500"}`}>
             {Icons.logout} Sign out
           </button>
         </div>
@@ -188,11 +188,22 @@ export function StatCard({ dark, label, value, sub, accent = "blue", icon }) {
   );
 }
 
-export function Shell({ dark, onToggleTheme, activePage, isAdmin, title, subtitle, children }) {
+export function Shell({ dark, onToggleTheme, activePage, isAdmin, title, subtitle, children, onSignOut }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleSignOut = () => {
+    if (onSignOut) {
+      onSignOut();
+      return;
+    }
+
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  };
+
   return (
     <div className={`min-h-screen flex transition-colors duration-500 ${dark ? "bg-[#060b18]" : "bg-slate-50"}`} style={{ fontFamily: "'DM Sans',sans-serif" }}>
-      <Sidebar dark={dark} onToggleTheme={onToggleTheme} activePage={activePage} isAdmin={isAdmin} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      <Sidebar dark={dark} onToggleTheme={onToggleTheme} activePage={activePage} isAdmin={isAdmin} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} onSignOut={handleSignOut} />
       <div className="flex-1 flex flex-col lg:ml-60 min-h-screen">
         <Topbar dark={dark} title={title} subtitle={subtitle} onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 p-6 overflow-y-auto">{children}</main>

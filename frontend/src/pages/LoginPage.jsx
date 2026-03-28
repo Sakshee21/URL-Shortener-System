@@ -1,38 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
-    const formData = new URLSearchParams();
-    formData.append("username", email);
-    formData.append("password", password);
-
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/login", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        setError("Invalid credentials");
-        return;
-      }
-
-      const data = await res.json();
-
-      localStorage.setItem("token", data.access_token);
-
+      await login(email, password);
       navigate("/dashboard");
     } catch (err) {
-      setError("Something went wrong");
+      setError(err.message || "Something went wrong");
     }
   };
 
@@ -121,7 +106,7 @@ export default function LoginPage() {
 
           <p className="mt-6 text-sm text-gray-600 dark:text-gray-300">
             Don’t have an account?{" "}
-            <Link to="/register" className="text-blue-600 dark:text-blue-400 font-semibold">
+            <Link to="/signup" className="text-blue-600 dark:text-blue-400 font-semibold">
               Sign up
             </Link>
           </p>

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { registerUser } from "../services/api";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -18,27 +19,12 @@ export default function SignupPage() {
     }
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.detail || "Registration failed");
-        return;
-      }
+      await registerUser(email, password);
 
       alert("Registration successful! Please login.");
       navigate("/login");
     } catch (err) {
-      setError("Something went wrong");
+      setError(err.message || "Something went wrong");
     }
   };
 

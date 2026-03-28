@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Shell, StatCard } from "./DashboardLayout";
+import { useAuth } from "../hooks/useAuth";
 
 function ClicksChart({ dark, data }) {
   const max = Math.max(...data.map(d => d.clicks), 1);
@@ -117,6 +118,7 @@ export default function AnalyticsPage() {
   const [dark, setDark] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [range, setRange] = useState("30d");
+  const { logout } = useAuth();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -140,6 +142,7 @@ export default function AnalyticsPage() {
       onToggleTheme={() => setDark(d => !d)}
       activePage="analytics"
       isAdmin={false}
+      onSignOut={logout}
       title="Analytics"
       subtitle="Insights across all your shortened links"
     >

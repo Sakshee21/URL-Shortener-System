@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Shell, StatCard } from "./DashboardLayout";
+import { useAuth } from "../hooks/useAuth";
 
 function Spark({ data, color = "#3b82f6" }) {
   const max  = Math.max(...data, 1);
@@ -80,6 +81,7 @@ export default function AdminDashboard() {
   const [animate, setAnimate] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("users"); // users | links
+  const { logout } = useAuth();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -103,6 +105,7 @@ export default function AdminDashboard() {
       onToggleTheme={() => setDark(d => !d)}
       activePage="admin"
       isAdmin={true}
+      onSignOut={logout}
       title="Admin Panel"
       subtitle="Platform overview and user management"
     >

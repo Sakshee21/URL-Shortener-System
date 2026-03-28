@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shell, StatCard } from "./DashboardLayout";
+import { getMyUrls, shortenUrl } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 function MiniBar({ data, color = "#3b82f6" }) {
   const max = Math.max(...data, 1);
@@ -29,13 +31,17 @@ function StatusBadge({ active, dark }) {
   );
 }
 
-const MOCK_LINKS = [
-  { id: 1, original: "https://www.example.com/very/long/path/to/some/article-title-here", short: "linksprint.ly/aB3xZ", clicks: 1842, created: "2025-01-12", lastAccessed: "2 hours ago",  active: true,  trend: [12,18,9,24,31,28,42] },
-  { id: 2, original: "https://github.com/username/some-repository/blob/main/README.md",   short: "linksprint.ly/cD7mQ", clicks: 934,  created: "2025-01-18", lastAccessed: "1 day ago",    active: true,  trend: [5,8,12,7,15,10,9] },
-  { id: 3, original: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms", short: "linksprint.ly/eF2pL", clicks: 421,  created: "2025-02-03", lastAccessed: "3 days ago",   active: true,  trend: [3,5,4,8,6,9,7] },
-  { id: 4, original: "https://www.figma.com/file/XYZ123/Design-System?node-id=0%3A1",     short: "linksprint.ly/gH8kR", clicks: 208,  created: "2025-02-10", lastAccessed: "1 week ago",   active: false, trend: [8,6,4,3,2,1,0] },
-  { id: 5, original: "https://notion.so/workspace/Project-Brief-abc123def456",             short: "linksprint.ly/iJ5nW", clicks: 87,   created: "2025-02-19", lastAccessed: "2 weeks ago",  active: true,  trend: [1,2,1,3,2,4,3] },
-];
+const mapApiLinkToUi = (item) => ({
+  id: item.id,
+  original: item.original_url,
+  short: item.short_url.replace(/^https?:\/\//, ""),
+  shortUrl: item.short_url,
+  clicks: 0,
+  created: new Date(item.created_at).toISOString().slice(0, 10),
+  lastAccessed: "-",
+  active: true,
+  trend: [0, 0, 0, 0, 0, 0, 0],
+});
 
 export default function DashboardPage() {
   const [dark, setDark] = useState(false);
@@ -45,6 +51,12 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [filter, setFilter] = useState("all"); // all | active | inactive
+  const [links, setLinks] = useState([]);
+  const [createError, setCreateError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(true);
+  const { token, logout } = useAuth();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -54,19 +66,91 @@ export default function DashboardPage() {
     setTimeout(() => setAnimate(true), 80);
   }, []);
 
-  const filtered = MOCK_LINKS.filter(l => {
+  useEffect(() => {
+    const fetchLinks = async () => {
+      setLoadError("");
+      setIsLoadingLinks(true);
+
+      try {
+        const items = await getMyUrls({ token });
+        setLinks(items.map(mapApiLinkToUi));
+      } catch (err) {
+        if (err.status === 401) {
+          logout();
+          return;
+        }
+
+        setLoadError(err.message || "Unable to load your links");
+      } finally {
+        setIsLoadingLinks(false);
+      }
+    };
+
+    fetchLinks();
+  }, [token, logout]);
+
+  const filtered = links.filter(l => {
     const matchSearch = l.short.includes(search) || l.original.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "all" || (filter === "active" ? l.active : !l.active);
     return matchSearch && matchFilter;
   });
 
-  const totalClicks  = MOCK_LINKS.reduce((s, l) => s + l.clicks, 0);
-  const activeLinks  = MOCK_LINKS.filter(l => l.active).length;
+  const totalClicks  = links.reduce((s, l) => s + l.clicks, 0);
+  const activeLinks  = links.filter(l => l.active).length;
 
-  const handleCopy = (id, short) => {
-    navigator.clipboard.writeText(`https://${short}`);
+  const getLinkUrl = (link) => {
+    if (link.shortUrl) {
+      return link.shortUrl;
+    }
+
+    if (link.short.startsWith("http://") || link.short.startsWith("https://")) {
+      return link.short;
+    }
+
+    return `https://${link.short}`;
+  };
+
+  const handleCopy = (id, link) => {
+    navigator.clipboard.writeText(getLinkUrl(link));
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleCreateShortLink = async () => {
+    if (!newUrl.trim()) {
+      return;
+    }
+
+    setCreateError("");
+    setIsCreating(true);
+
+    try {
+      const result = await shortenUrl(newUrl, { includeAuth: true, token });
+      const shortWithoutProtocol = result.short_url.replace(/^https?:\/\//, "");
+
+      setLinks((prev) => [
+        {
+          id: Date.now(),
+          original: result.original_url,
+          short: shortWithoutProtocol,
+          shortUrl: result.short_url,
+          clicks: 0,
+          created: new Date(result.created_at).toISOString().slice(0, 10),
+          lastAccessed: "just now",
+          active: true,
+          trend: [0, 0, 0, 0, 0, 0, 0],
+        },
+        ...prev,
+      ]);
+      setNewUrl("");
+    } catch (err) {
+      if (err.status === 401) {
+        logout();
+      }
+      setCreateError(err.message || "Unable to create short link");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const card = dark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-100";
@@ -77,6 +161,7 @@ export default function DashboardPage() {
       onToggleTheme={() => setDark(d => !d)}
       activePage="dashboard"
       isAdmin={false}
+      onSignOut={logout}
       title="Dashboard"
       subtitle="Welcome back 👋  Here's your link activity"
     >
@@ -84,7 +169,7 @@ export default function DashboardPage() {
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard dark={dark} label="Total Links" value={MOCK_LINKS.length} sub="All time" accent="blue" icon={
+          <StatCard dark={dark} label="Total Links" value={links.length} sub="All time" accent="blue" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
@@ -95,7 +180,7 @@ export default function DashboardPage() {
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
           }/>
-          <StatCard dark={dark} label="Active Links" value={activeLinks} sub={`${MOCK_LINKS.length - activeLinks} inactive`} accent="green" icon={
+          <StatCard dark={dark} label="Active Links" value={activeLinks} sub={`${links.length - activeLinks} inactive`} accent="green" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
@@ -120,13 +205,16 @@ export default function DashboardPage() {
               placeholder="Paste your long URL here..."
               className={`flex-1 bg-transparent text-sm py-2 px-2 outline-none ${dark ? "text-white placeholder-slate-500" : "text-slate-800 placeholder-slate-400"}`}
             />
-            <button className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-600 hover:opacity-90 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all shadow-md shadow-blue-500/20">
-              Shorten
+            <button onClick={handleCreateShortLink} disabled={isCreating} className="shrink-0 flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-600 hover:opacity-90 disabled:opacity-70 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all shadow-md shadow-blue-500/20">
+              {isCreating ? "Creating..." : "Shorten"}
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
               </svg>
             </button>
           </div>
+          {createError && (
+            <p className={`text-xs mt-3 ${dark ? "text-red-400" : "text-red-600"}`}>{createError}</p>
+          )}
         </div>
 
         {/* ── Links table ── */}
@@ -161,10 +249,16 @@ export default function DashboardPage() {
 
           {/* Rows */}
           <div className="divide-y divide-slate-800/30">
-            {filtered.length === 0 && (
+            {isLoadingLinks && (
+              <div className={`py-12 text-center text-sm ${dark ? "text-slate-600" : "text-slate-400"}`}>Loading links...</div>
+            )}
+            {loadError && (
+              <div className={`py-4 text-center text-sm ${dark ? "text-red-400" : "text-red-600"}`}>{loadError}</div>
+            )}
+            {!isLoadingLinks && !loadError && filtered.length === 0 && (
               <div className={`py-12 text-center text-sm ${dark ? "text-slate-600" : "text-slate-400"}`}>No links found.</div>
             )}
-            {filtered.map((link, i) => (
+            {!isLoadingLinks && filtered.map((link, i) => (
               <div key={link.id}
                 className={`flex items-center gap-4 px-5 py-4 transition-colors duration-200 ${dark ? "hover:bg-slate-800/40" : "hover:bg-slate-50/80"}`}
                 style={{ animationDelay: `${i * 50}ms` }}>
@@ -172,8 +266,15 @@ export default function DashboardPage() {
                 {/* Short URL + original */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-sm font-semibold ${dark ? "text-blue-400" : "text-blue-600"}`}>{link.short}</span>
-                    <button onClick={() => handleCopy(link.id, link.short)}
+                    <a
+                      href={getLinkUrl(link)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`text-sm font-semibold hover:underline ${dark ? "text-blue-400" : "text-blue-600"}`}
+                    >
+                      {link.short}
+                    </a>
+                    <button onClick={() => handleCopy(link.id, link)}
                       className={`text-xs px-2 py-0.5 rounded-md transition-all duration-200 ${
                         copied === link.id
                           ? dark ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-600"
@@ -235,7 +336,7 @@ export default function DashboardPage() {
 
           {/* Footer */}
           <div className={`px-5 py-3 border-t flex items-center justify-between ${dark ? "border-slate-800" : "border-slate-100"}`}>
-            <p className={`text-xs ${dark ? "text-slate-600" : "text-slate-400"}`}>Showing {filtered.length} of {MOCK_LINKS.length} links</p>
+            <p className={`text-xs ${dark ? "text-slate-600" : "text-slate-400"}`}>Showing {filtered.length} of {links.length} links</p>
             <div className="flex gap-1">
               {[1,2,3].map(p => (
                 <button key={p} className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all duration-200 ${
