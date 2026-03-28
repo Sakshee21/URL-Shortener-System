@@ -137,20 +137,26 @@ export default function DashboardPage() {
       const result = await shortenUrl(newUrl, { includeAuth: true, token });
       const shortWithoutProtocol = result.short_url.replace(/^https?:\/\//, "");
 
-      setLinks((prev) => [
-        {
-          id: Date.now(),
-          original: result.original_url,
-          short: shortWithoutProtocol,
-          shortUrl: result.short_url,
-          clicks: 0,
-          created: new Date(result.created_at).toISOString().slice(0, 10),
-          lastAccessed: "just now",
-          active: true,
-          trend: [0, 0, 0, 0, 0, 0, 0],
-        },
-        ...prev,
-      ]);
+      setLinks((prev) => {
+        if (prev.some((link) => link.shortUrl === result.short_url)) {
+          return prev;
+        }
+
+        return [
+          {
+            id: Date.now(),
+            original: result.original_url,
+            short: shortWithoutProtocol,
+            shortUrl: result.short_url,
+            clicks: 0,
+            created: new Date(result.created_at).toISOString().slice(0, 10),
+            lastAccessed: "just now",
+            active: true,
+            trend: [0, 0, 0, 0, 0, 0, 0],
+          },
+          ...prev,
+        ];
+      });
       setNewUrl("");
     } catch (err) {
       if (err.status === 401) {
