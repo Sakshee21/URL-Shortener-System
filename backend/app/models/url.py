@@ -14,5 +14,7 @@ class URL(Base):
     short_code = Column(String, unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    click_count = Column(Integer, default=0, nullable=False)
+    last_accessed_at = Column(DateTime, nullable=True)
 
     owner = relationship("User", back_populates="urls")

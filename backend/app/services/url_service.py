@@ -1,5 +1,6 @@
 import secrets
 import string
+from datetime import datetime
 from urllib.parse import urlparse
 
 from fastapi import HTTPException
@@ -65,6 +66,10 @@ def get_original_url_by_short_code(db: Session, short_code: str) -> str:
 
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
+
+    url_entry.click_count += 1
+    url_entry.last_accessed_at = datetime.utcnow()
+    db.commit()
 
     return url_entry.original_url
 

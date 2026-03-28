@@ -43,6 +43,8 @@ def get_my_urls(db: Session = Depends(get_db), current_user=Depends(get_current_
             short_url=build_short_url(url.short_code),
             original_url=url.original_url,
             created_at=url.created_at,
+            click_count=url.click_count,
+            last_accessed_at=url.last_accessed_at,
         )
         for url in urls
     ]

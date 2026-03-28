@@ -22,6 +22,8 @@ class URLListItemResponse(BaseModel):
     short_url: str
     original_url: str
     created_at: datetime
+    click_count: int
+    last_accessed_at: Optional[datetime] = None
 
 
 class URLResolveResponse(BaseModel):

@@ -36,9 +36,11 @@ const mapApiLinkToUi = (item) => ({
   original: item.original_url,
   short: item.short_url.replace(/^https?:\/\//, ""),
   shortUrl: item.short_url,
-  clicks: 0,
+  clicks: item.click_count ?? 0,
   created: new Date(item.created_at).toISOString().slice(0, 10),
-  lastAccessed: "-",
+  lastAccessed: item.last_accessed_at
+    ? new Date(item.last_accessed_at).toLocaleString()
+    : "-",
   active: true,
   trend: [0, 0, 0, 0, 0, 0, 0],
 });
@@ -97,6 +99,13 @@ export default function DashboardPage() {
 
   const totalClicks  = links.reduce((s, l) => s + l.clicks, 0);
   const activeLinks  = links.filter(l => l.active).length;
+  const topLink = links.reduce((currentTop, link) => {
+    if (!currentTop || link.clicks > currentTop.clicks) {
+      return link;
+    }
+
+    return currentTop;
+  }, null);
 
   const getLinkUrl = (link) => {
     if (link.shortUrl) {
@@ -185,7 +194,7 @@ export default function DashboardPage() {
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           }/>
-          <StatCard dark={dark} label="Top Link Clicks" value="1,842" sub="linksprint.ly/aB3xZ" accent="amber" icon={
+          <StatCard dark={dark} label="Top Link Clicks" value={topLink ? topLink.clicks.toLocaleString() : "0"} sub={topLink ? topLink.short : "No links yet"} accent="amber" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
