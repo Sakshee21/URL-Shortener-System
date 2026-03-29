@@ -123,6 +123,26 @@ export async function updateUrlStatus(urlId, isActive, options = {}) {
 	});
 }
 
+export async function getMyAnalytics(options = {}) {
+	const { token, range = "30d" } = options;
+
+	return apiRequest(`/urls/me/analytics?range=${encodeURIComponent(range)}`, {
+		method: "GET",
+		includeAuth: true,
+		token,
+	});
+}
+
+export async function getUrlAnalytics(urlId, options = {}) {
+	const { token, range = "30d" } = options;
+
+	return apiRequest(`/urls/${urlId}/analytics?range=${encodeURIComponent(range)}`, {
+		method: "GET",
+		includeAuth: true,
+		token,
+	});
+}
+
 export async function getUrlPreview(shortCode) {
 	return apiRequest(`/urls/preview/${shortCode}`, {
 		method: "GET",

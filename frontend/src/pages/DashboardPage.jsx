@@ -146,7 +146,7 @@ export default function DashboardPage() {
 
         return [
           {
-            id: Date.now(),
+            id: result.id ?? Date.now(),
             original: result.original_url,
             short: shortWithoutProtocol,
             shortUrl: result.short_url,

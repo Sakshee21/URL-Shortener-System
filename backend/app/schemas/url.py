@@ -9,6 +9,7 @@ class URLCreate(BaseModel):
 
 
 class URLCreateResponse(BaseModel):
+    id: int
     short_code: str
     short_url: str
     original_url: str
@@ -39,6 +40,70 @@ class URLStatusUpdateRequest(BaseModel):
 class URLStatusUpdateResponse(BaseModel):
     id: int
     is_active: bool
+
+
+class AnalyticsTimePoint(BaseModel):
+    date: str
+    label: str
+    clicks: int
+
+
+class AnalyticsBreakdownItem(BaseModel):
+    label: str
+    value: int
+
+
+class AnalyticsTopLinkItem(BaseModel):
+    id: int
+    short_code: str
+    short_url: str
+    clicks: int
+
+
+class AnalyticsRecentActivityItem(BaseModel):
+    url_id: int
+    short_code: str
+    short_url: str
+    timestamp: datetime
+    device: str
+    browser: str
+
+
+class AnalyticsLastAccessedItem(BaseModel):
+    url_id: int
+    short_code: str
+    short_url: str
+    timestamp: datetime
+
+
+class UserAnalyticsResponse(BaseModel):
+    range: str
+    total_clicks: int
+    unique_visitors: int
+    average_clicks_per_day: float
+    active_links: int
+    last_accessed: Optional[AnalyticsLastAccessedItem] = None
+    clicks_over_time: list[AnalyticsTimePoint]
+    top_links: list[AnalyticsTopLinkItem]
+    device_breakdown: list[AnalyticsBreakdownItem]
+    browser_breakdown: list[AnalyticsBreakdownItem]
+    recent_activity: list[AnalyticsRecentActivityItem]
+
+
+class URLAnalyticsResponse(BaseModel):
+    range: str
+    url_id: int
+    short_code: str
+    short_url: str
+    original_url: str
+    total_clicks: int
+    unique_visitors: int
+    average_clicks_per_day: float
+    last_accessed: Optional[datetime] = None
+    clicks_over_time: list[AnalyticsTimePoint]
+    device_breakdown: list[AnalyticsBreakdownItem]
+    browser_breakdown: list[AnalyticsBreakdownItem]
+    recent_activity: list[AnalyticsRecentActivityItem]
 
 
 class URLWarningResponse(BaseModel):

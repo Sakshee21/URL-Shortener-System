@@ -1,3 +1,5 @@
+from collections import Counter
+from datetime import datetime, timedelta
 from uuid import uuid4
 from typing import Literal
 from urllib.parse import urlparse
@@ -6,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import BASE_URL, MIN_SHORT_CODE_LENGTH
+from app.models.click import Click
 from app.models.url import URL
 from app.services.preview_service import fetch_preview_metadata
 from app.services.security_service import assert_url_not_blacklisted, score_url_risk
@@ -183,3 +186,178 @@ def set_url_active_state(db: Session, url_id: int, user_id: int, is_active: bool
 
 def soft_delete_url(db: Session, url_id: int, user_id: int) -> URL:
     return set_url_active_state(db=db, url_id=url_id, user_id=user_id, is_active=False)
+
+
+def _parse_device(user_agent: str) -> str:
+    ua = user_agent.lower()
+
+    if "ipad" in ua or "tablet" in ua:
+        return "Tablet"
+    if "mobile" in ua or "iphone" in ua or "android" in ua:
+        return "Mobile"
+    return "Desktop"
+
+
+def _parse_browser(user_agent: str) -> str:
+    ua = user_agent.lower()
+
+    if "edg/" in ua:
+        return "Edge"
+    if "firefox" in ua:
+        return "Firefox"
+    if "chrome" in ua and "edg/" not in ua and "opr/" not in ua:
+        return "Chrome"
+    if "safari" in ua and "chrome" not in ua:
+        return "Safari"
+    return "Others"
+
+
+def _range_days(range_value: Literal["7d", "30d", "90d"]) -> int:
+    return {"7d": 7, "30d": 30, "90d": 90}[range_value]
+
+
+def _series_template(days: int) -> dict[datetime.date, int]:
+    today = datetime.utcnow().date()
+    start = today - timedelta(days=days - 1)
+    return {start + timedelta(days=offset): 0 for offset in range(days)}
+
+
+def _build_click_series(clicks: list[Click], days: int) -> list[dict]:
+    by_day = _series_template(days)
+
+    for click in clicks:
+        click_day = click.timestamp.date()
+        if click_day in by_day:
+            by_day[click_day] += 1
+
+    return [
+        {
+            "date": day.isoformat(),
+            "label": day.strftime("%a"),
+            "clicks": count,
+        }
+        for day, count in by_day.items()
+    ]
+
+
+def _recent_activity(clicks: list[Click], urls_by_id: dict[int, URL], limit: int = 10) -> list[dict]:
+    recent: list[dict] = []
+
+    for click in clicks[:limit]:
+        url_entry = urls_by_id.get(click.url_id)
+        if not url_entry:
+            continue
+
+        recent.append(
+            {
+                "url_id": url_entry.id,
+                "short_code": url_entry.short_code,
+                "short_url": build_short_url(url_entry.short_code),
+                "timestamp": click.timestamp,
+                "device": _parse_device(click.user_agent or ""),
+                "browser": _parse_browser(click.user_agent or ""),
+            }
+        )
+
+    return recent
+
+
+def _breakdown_from_clicks(clicks: list[Click], parser) -> list[dict]:
+    counts = Counter(parser(click.user_agent or "") for click in clicks)
+    return [{"label": label, "value": value} for label, value in counts.most_common()]
+
+
+def get_user_analytics(db: Session, user_id: int, range_value: Literal["7d", "30d", "90d"]) -> dict:
+    days = _range_days(range_value)
+    start_at = datetime.utcnow() - timedelta(days=days - 1)
+
+    user_urls = db.query(URL).filter(URL.user_id == user_id).all()
+    urls_by_id = {url.id: url for url in user_urls}
+    url_ids = list(urls_by_id.keys())
+
+    clicks: list[Click] = []
+    if url_ids:
+        clicks = (
+            db.query(Click)
+            .filter(Click.url_id.in_(url_ids), Click.timestamp >= start_at)
+            .order_by(Click.timestamp.desc())
+            .all()
+        )
+
+    total_clicks = len(clicks)
+    unique_visitors = len({click.ip_hash for click in clicks})
+    average_clicks_per_day = round(total_clicks / days, 2)
+    active_links = sum(1 for url in user_urls if url.is_active)
+
+    last_accessed_url = next(
+        (url for url in sorted(user_urls, key=lambda item: item.last_accessed_at or datetime.min, reverse=True) if url.last_accessed_at),
+        None,
+    )
+    last_accessed = None
+    if last_accessed_url and last_accessed_url.last_accessed_at:
+        last_accessed = {
+            "url_id": last_accessed_url.id,
+            "short_code": last_accessed_url.short_code,
+            "short_url": build_short_url(last_accessed_url.short_code),
+            "timestamp": last_accessed_url.last_accessed_at,
+        }
+
+    by_url = Counter(click.url_id for click in clicks)
+    top_links = [
+        {
+            "id": url_id,
+            "short_code": urls_by_id[url_id].short_code,
+            "short_url": build_short_url(urls_by_id[url_id].short_code),
+            "clicks": count,
+        }
+        for url_id, count in by_url.most_common(5)
+        if url_id in urls_by_id
+    ]
+
+    return {
+        "range": range_value,
+        "total_clicks": total_clicks,
+        "unique_visitors": unique_visitors,
+        "average_clicks_per_day": average_clicks_per_day,
+        "active_links": active_links,
+        "last_accessed": last_accessed,
+        "clicks_over_time": _build_click_series(clicks, days),
+        "top_links": top_links,
+        "device_breakdown": _breakdown_from_clicks(clicks, _parse_device),
+        "browser_breakdown": _breakdown_from_clicks(clicks, _parse_browser),
+        "recent_activity": _recent_activity(clicks, urls_by_id),
+    }
+
+
+def get_url_analytics(
+    db: Session,
+    user_id: int,
+    url_id: int,
+    range_value: Literal["7d", "30d", "90d"],
+) -> dict:
+    url_entry = get_url_by_id_for_user(db=db, url_id=url_id, user_id=user_id)
+    days = _range_days(range_value)
+    start_at = datetime.utcnow() - timedelta(days=days - 1)
+
+    clicks = (
+        db.query(Click)
+        .filter(Click.url_id == url_entry.id, Click.timestamp >= start_at)
+        .order_by(Click.timestamp.desc())
+        .all()
+    )
+
+    return {
+        "range": range_value,
+        "url_id": url_entry.id,
+        "short_code": url_entry.short_code,
+        "short_url": build_short_url(url_entry.short_code),
+        "original_url": url_entry.original_url,
+        "total_clicks": len(clicks),
+        "unique_visitors": len({click.ip_hash for click in clicks}),
+        "average_clicks_per_day": round(len(clicks) / days, 2),
+        "last_accessed": url_entry.last_accessed_at,
+        "clicks_over_time": _build_click_series(clicks, days),
+        "device_breakdown": _breakdown_from_clicks(clicks, _parse_device),
+        "browser_breakdown": _breakdown_from_clicks(clicks, _parse_browser),
+        "recent_activity": _recent_activity(clicks, {url_entry.id: url_entry}),
+    }

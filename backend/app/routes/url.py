@@ -10,9 +10,11 @@ from app.db.session import get_db
 from app.dependencies.rate_limit_dependency import rate_limit_create_url
 from app.dependencies.auth_dependencies import get_current_user, get_optional_current_user
 from app.schemas.url import (
+    URLAnalyticsResponse,
     URLCreate,
     URLCreateResponse,
     URLListItemResponse,
+    UserAnalyticsResponse,
     URLStatusUpdateRequest,
     URLStatusUpdateResponse,
     URLWarningResponse,
@@ -22,7 +24,9 @@ from app.services.security_service import assert_url_not_blacklisted
 from app.services.url_service import (
     build_short_url,
     create_short_url,
+    get_url_analytics,
     get_url_by_short_code,
+    get_user_analytics,
     get_urls_by_user_id_with_status,
     set_url_active_state,
     soft_delete_url,
@@ -42,6 +46,7 @@ def shorten_url(
     url_entry = create_short_url(db=db, original_url=payload.original_url, user_id=user_id)
 
     return URLCreateResponse(
+        id=url_entry.id,
         short_code=url_entry.short_code,
         short_url=build_short_url(url_entry.short_code),
         original_url=url_entry.original_url,
@@ -101,6 +106,25 @@ def update_my_url_status(
         is_active=payload.is_active,
     )
     return URLStatusUpdateResponse(id=url_entry.id, is_active=url_entry.is_active)
+
+
+@router.get("/urls/me/analytics", response_model=UserAnalyticsResponse)
+def get_my_analytics(
+    range: Literal["7d", "30d", "90d"] = Query(default="30d"),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return get_user_analytics(db=db, user_id=current_user.id, range_value=range)
+
+
+@router.get("/urls/{url_id}/analytics", response_model=URLAnalyticsResponse)
+def get_link_analytics(
+    url_id: int,
+    range: Literal["7d", "30d", "90d"] = Query(default="30d"),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return get_url_analytics(db=db, user_id=current_user.id, url_id=url_id, range_value=range)
 
 
 @router.get("/urls/preview/{short_code}", response_model=URLWarningResponse)
