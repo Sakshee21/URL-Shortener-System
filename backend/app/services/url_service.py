@@ -1,4 +1,5 @@
 from uuid import uuid4
+from typing import Literal
 from urllib.parse import urlparse
 
 from fastapi import HTTPException
@@ -72,6 +73,10 @@ def create_short_url(db: Session, original_url: str, user_id: int | None = None)
     if existing_url:
         updated = False
 
+        if not existing_url.is_active:
+            existing_url.is_active = True
+            updated = True
+
         # Attach ownership when a guest-created URL is first reused by an authenticated user.
         if user_id and existing_url.user_id is None:
             existing_url.user_id = user_id
@@ -132,7 +137,7 @@ def build_short_url(short_code: str) -> str:
 
 
 def get_url_by_short_code(db: Session, short_code: str) -> URL:
-    url_entry = db.query(URL).filter(URL.short_code == short_code).first()
+    url_entry = db.query(URL).filter(URL.short_code == short_code, URL.is_active.is_(True)).first()
 
     if not url_entry:
         raise HTTPException(status_code=404, detail="Short URL not found")
@@ -141,9 +146,40 @@ def get_url_by_short_code(db: Session, short_code: str) -> URL:
 
 
 def get_urls_by_user_id(db: Session, user_id: int) -> list[URL]:
-    return (
-        db.query(URL)
-        .filter(URL.user_id == user_id)
-        .order_by(URL.created_at.desc())
-        .all()
-    )
+    return get_urls_by_user_id_with_status(db=db, user_id=user_id, status="all")
+
+
+def get_urls_by_user_id_with_status(
+    db: Session,
+    user_id: int,
+    status: Literal["all", "active", "inactive"] = "all",
+) -> list[URL]:
+    query = db.query(URL).filter(URL.user_id == user_id)
+
+    if status == "active":
+        query = query.filter(URL.is_active.is_(True))
+    elif status == "inactive":
+        query = query.filter(URL.is_active.is_(False))
+
+    return query.order_by(URL.created_at.desc()).all()
+
+
+def get_url_by_id_for_user(db: Session, url_id: int, user_id: int) -> URL:
+    url_entry = db.query(URL).filter(URL.id == url_id, URL.user_id == user_id).first()
+
+    if not url_entry:
+        raise HTTPException(status_code=404, detail="Short URL not found")
+
+    return url_entry
+
+
+def set_url_active_state(db: Session, url_id: int, user_id: int, is_active: bool) -> URL:
+    url_entry = get_url_by_id_for_user(db=db, url_id=url_id, user_id=user_id)
+    url_entry.is_active = is_active
+    db.commit()
+    db.refresh(url_entry)
+    return url_entry
+
+
+def soft_delete_url(db: Session, url_id: int, user_id: int) -> URL:
+    return set_url_active_state(db=db, url_id=url_id, user_id=user_id, is_active=False)

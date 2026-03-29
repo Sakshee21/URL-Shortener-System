@@ -29,6 +29,16 @@ class URLListItemResponse(BaseModel):
     last_accessed_at: Optional[datetime] = None
     risk_level: str
     risk_score: int
+    is_active: bool
+
+
+class URLStatusUpdateRequest(BaseModel):
+    is_active: bool
+
+
+class URLStatusUpdateResponse(BaseModel):
+    id: int
+    is_active: bool
 
 
 class URLWarningResponse(BaseModel):

@@ -1,6 +1,7 @@
 from urllib.parse import urlparse
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -8,14 +9,23 @@ from app.core.config import BASE_URL, FRONTEND_BASE_URL
 from app.db.session import get_db
 from app.dependencies.rate_limit_dependency import rate_limit_create_url
 from app.dependencies.auth_dependencies import get_current_user, get_optional_current_user
-from app.schemas.url import URLCreate, URLCreateResponse, URLListItemResponse, URLWarningResponse
+from app.schemas.url import (
+    URLCreate,
+    URLCreateResponse,
+    URLListItemResponse,
+    URLStatusUpdateRequest,
+    URLStatusUpdateResponse,
+    URLWarningResponse,
+)
 from app.services.click_service import log_click
 from app.services.security_service import assert_url_not_blacklisted
 from app.services.url_service import (
     build_short_url,
     create_short_url,
     get_url_by_short_code,
-    get_urls_by_user_id,
+    get_urls_by_user_id_with_status,
+    set_url_active_state,
+    soft_delete_url,
 )
 
 router = APIRouter(tags=["URL Shortener"])
@@ -43,8 +53,12 @@ def shorten_url(
 
 
 @router.get("/urls/me", response_model=list[URLListItemResponse])
-def get_my_urls(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    urls = get_urls_by_user_id(db=db, user_id=current_user.id)
+def get_my_urls(
+    status: Literal["all", "active", "inactive"] = Query(default="all"),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    urls = get_urls_by_user_id_with_status(db=db, user_id=current_user.id, status=status)
     return [
         URLListItemResponse(
             id=url.id,
@@ -57,9 +71,36 @@ def get_my_urls(db: Session = Depends(get_db), current_user=Depends(get_current_
             last_accessed_at=url.last_accessed_at,
             risk_level=url.risk_level,
             risk_score=url.risk_score,
+            is_active=url.is_active,
         )
         for url in urls
     ]
+
+
+@router.delete("/urls/{url_id}", response_model=URLStatusUpdateResponse)
+def delete_my_url(
+    url_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    url_entry = soft_delete_url(db=db, url_id=url_id, user_id=current_user.id)
+    return URLStatusUpdateResponse(id=url_entry.id, is_active=url_entry.is_active)
+
+
+@router.patch("/urls/{url_id}/status", response_model=URLStatusUpdateResponse)
+def update_my_url_status(
+    url_id: int,
+    payload: URLStatusUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    url_entry = set_url_active_state(
+        db=db,
+        url_id=url_id,
+        user_id=current_user.id,
+        is_active=payload.is_active,
+    )
+    return URLStatusUpdateResponse(id=url_entry.id, is_active=url_entry.is_active)
 
 
 @router.get("/urls/preview/{short_code}", response_model=URLWarningResponse)

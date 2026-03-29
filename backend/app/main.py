@@ -56,6 +56,9 @@ def ensure_url_analytics_columns() -> None:
         if "preview_image_url" not in column_names:
             connection.execute(text("ALTER TABLE urls ADD COLUMN preview_image_url VARCHAR"))
 
+        if "is_active" not in column_names:
+            connection.execute(text("ALTER TABLE urls ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"))
+
         connection.commit()
 
 

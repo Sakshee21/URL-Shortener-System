@@ -92,10 +92,32 @@ export async function shortenUrl(originalUrl, options = {}) {
 }
 
 export async function getMyUrls(options = {}) {
+	const { token, status } = options;
+	const query = status ? `?status=${encodeURIComponent(status)}` : "";
+
+	return apiRequest(`/urls/me${query}`, {
+		method: "GET",
+		includeAuth: true,
+		token,
+	});
+}
+
+export async function deleteUrl(urlId, options = {}) {
 	const { token } = options;
 
-	return apiRequest("/urls/me", {
-		method: "GET",
+	return apiRequest(`/urls/${urlId}`, {
+		method: "DELETE",
+		includeAuth: true,
+		token,
+	});
+}
+
+export async function updateUrlStatus(urlId, isActive, options = {}) {
+	const { token } = options;
+
+	return apiRequest(`/urls/${urlId}/status`, {
+		method: "PATCH",
+		body: { is_active: isActive },
 		includeAuth: true,
 		token,
 	});

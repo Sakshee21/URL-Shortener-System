@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Shell, StatCard } from "./DashboardLayout";
-import { getMyUrls, shortenUrl } from "../services/api";
+import { deleteUrl, getMyUrls, shortenUrl, updateUrlStatus } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 
 function MiniBar({ data, color = "#3b82f6" }) {
@@ -41,7 +41,7 @@ const mapApiLinkToUi = (item) => ({
   lastAccessed: item.last_accessed_at
     ? new Date(item.last_accessed_at).toLocaleString()
     : "-",
-  active: true,
+  active: item.is_active ?? true,
   trend: [0, 0, 0, 0, 0, 0, 0],
 });
 
@@ -58,6 +58,8 @@ export default function DashboardPage() {
   const [loadError, setLoadError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingLinks, setIsLoadingLinks] = useState(true);
+  const [actionError, setActionError] = useState("");
+  const [pendingActionIds, setPendingActionIds] = useState([]);
   const { token, logout } = useAuth();
 
   useEffect(() => {
@@ -168,6 +170,58 @@ export default function DashboardPage() {
     }
   };
 
+  const updatePendingState = (id, pending) => {
+    setPendingActionIds((previous) => {
+      if (pending) {
+        if (previous.includes(id)) {
+          return previous;
+        }
+
+        return [...previous, id];
+      }
+
+      return previous.filter((item) => item !== id);
+    });
+  };
+
+  const handleDeleteLink = async (id) => {
+    setActionError("");
+    updatePendingState(id, true);
+
+    try {
+      await deleteUrl(id, { token });
+      setLinks((previous) => previous.map((link) => (link.id === id ? { ...link, active: false } : link)));
+    } catch (err) {
+      if (err.status === 401) {
+        logout();
+        return;
+      }
+
+      setActionError(err.message || "Unable to delete link");
+    } finally {
+      updatePendingState(id, false);
+    }
+  };
+
+  const handleRestoreLink = async (id) => {
+    setActionError("");
+    updatePendingState(id, true);
+
+    try {
+      await updateUrlStatus(id, true, { token });
+      setLinks((previous) => previous.map((link) => (link.id === id ? { ...link, active: true } : link)));
+    } catch (err) {
+      if (err.status === 401) {
+        logout();
+        return;
+      }
+
+      setActionError(err.message || "Unable to restore link");
+    } finally {
+      updatePendingState(id, false);
+    }
+  };
+
   const card = dark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-100";
 
   return (
@@ -264,6 +318,9 @@ export default function DashboardPage() {
 
           {/* Rows */}
           <div className="divide-y divide-slate-800/30">
+            {actionError && !isLoadingLinks && (
+              <div className={`py-4 text-center text-sm ${dark ? "text-red-400" : "text-red-600"}`}>{actionError}</div>
+            )}
             {isLoadingLinks && (
               <div className={`py-12 text-center text-sm ${dark ? "text-slate-600" : "text-slate-400"}`}>Loading links...</div>
             )}
@@ -338,12 +395,28 @@ export default function DashboardPage() {
                       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
                   </a>
-                  <button className={`p-2 rounded-lg transition-all duration-200 ${dark ? "text-slate-500 hover:bg-red-500/10 hover:text-red-400" : "text-slate-400 hover:bg-red-50 hover:text-red-500"}`} title="Delete">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-                      <path d="M9 6V4h6v2"/>
-                    </svg>
-                  </button>
+                  {link.active ? (
+                    <button
+                      onClick={() => handleDeleteLink(link.id)}
+                      disabled={pendingActionIds.includes(link.id)}
+                      className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-60 ${dark ? "text-slate-500 hover:bg-red-500/10 hover:text-red-400" : "text-slate-400 hover:bg-red-50 hover:text-red-500"}`}
+                      title="Delete"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                        <path d="M9 6V4h6v2"/>
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRestoreLink(link.id)}
+                      disabled={pendingActionIds.includes(link.id)}
+                      className={`px-2.5 py-1 text-xs rounded-lg transition-all duration-200 disabled:opacity-60 ${dark ? "text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20" : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"}`}
+                      title="Restore"
+                    >
+                      Restore
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

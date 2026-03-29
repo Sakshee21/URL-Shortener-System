@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -23,6 +23,7 @@ class URL(Base):
     page_description = Column(String, nullable=True)
     favicon_url = Column(String, nullable=True)
     preview_image_url = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
 
     owner = relationship("User", back_populates="urls")
     clicks = relationship("Click", back_populates="url")
