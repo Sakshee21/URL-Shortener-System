@@ -1,7 +1,8 @@
 # URL Shortener System
 
 ## Project Overview
-This URL Shortener System is a lightweight web-based application that allows users to convert long URLs into short, easy-to-share links. The system also provides basic analytics for users to track how often their shortened URLs are accessed. An administrative view is also included to monitor overall system usage.
+This URL Shortener System is a fast and minimal web application designed to generate compact links for long URLs while ensuring reliability and ease of use.
+There is a need for a simple, efficient, and user-friendly URL shortening service that focuses on core functionality with lightweight analytics.
 
 ## Problem It Solves
 Long URLs are difficult to share, remember, and manage, especially on social media platforms, messaging applications, and printed media. Existing URL shortening services often provide more complexity than required for basic use cases. There is a need for a simple, reliable, and easy-to-use URL shortening solution with minimal analytics.
