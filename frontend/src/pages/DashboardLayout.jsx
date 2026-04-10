@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 
 export const Icons = {
@@ -149,6 +150,10 @@ export function Sidebar({ dark, onToggleTheme, activePage, isAdmin = false, mobi
 }
 
 export function Topbar({ dark, title, subtitle, onMenuClick }) {
+  const { user } = useAuth();
+  const identity = (user?.name || user?.email || "").trim();
+  const avatarInitial = (identity.match(/[A-Za-z0-9]/)?.[0] || "U").toUpperCase();
+
   return (
     <header className={`h-16 flex items-center justify-between px-6 border-b transition-colors duration-300 ${dark ? "bg-[#060b18] border-slate-800" : "bg-slate-50/80 border-slate-100"}`}>
       <div className="flex items-center gap-4">
@@ -160,7 +165,7 @@ export function Topbar({ dark, title, subtitle, onMenuClick }) {
       </div>
       {/* Avatar */}
       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20">
-        U
+        {avatarInitial}
       </div>
     </header>
   );

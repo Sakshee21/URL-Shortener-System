@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -20,6 +20,4 @@ class UserResponse(BaseModel):
     is_admin: bool
     is_active: bool
     created_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

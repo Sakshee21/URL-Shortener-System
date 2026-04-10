@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class URLCreate(BaseModel):
@@ -145,6 +145,4 @@ class URLDetailResponse(BaseModel):
     short_code: str
     created_at: datetime
     user_id: Optional[int] = None
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
