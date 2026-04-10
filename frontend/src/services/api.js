@@ -205,6 +205,43 @@ export async function getAdminDashboard(options = {}) {
 	});
 }
 
+export async function getAdminUsers(options = {}) {
+	const {
+		token,
+		q = "",
+		status = "all",
+		page = 1,
+		pageSize = 10,
+	} = options;
+
+	const query = new URLSearchParams({
+		status,
+		page: String(page),
+		page_size: String(pageSize),
+	});
+
+	if (q.trim()) {
+		query.set("q", q.trim());
+	}
+
+	return apiRequest(`/admin/users?${query.toString()}`, {
+		method: "GET",
+		includeAuth: true,
+		token,
+	});
+}
+
+export async function updateAdminUserStatus(userId, isActive, options = {}) {
+	const { token } = options;
+
+	return apiRequest(`/admin/users/${userId}/status`, {
+		method: "PATCH",
+		body: { is_active: isActive },
+		includeAuth: true,
+		token,
+	});
+}
+
 export function getContinueRedirectUrl(shortCode) {
 	return `${API_BASE_URL}/urls/${shortCode}/go`;
 }
