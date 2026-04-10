@@ -16,6 +16,24 @@ class AdminUserSummary(BaseModel):
     total_links: int
     total_clicks: int
     is_admin: bool
+    is_active: bool
+
+
+class AdminUsersListResponse(BaseModel):
+    items: list[AdminUserSummary]
+    page: int
+    page_size: int
+    total_items: int
+    total_pages: int
+
+
+class AdminUserStatusUpdateRequest(BaseModel):
+    is_active: bool
+
+
+class AdminUserStatusUpdateResponse(BaseModel):
+    id: int
+    is_active: bool
 
 
 class AdminLinkSummary(BaseModel):

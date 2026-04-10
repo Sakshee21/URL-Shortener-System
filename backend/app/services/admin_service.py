@@ -1,6 +1,8 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
+from math import ceil
 
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -97,6 +99,7 @@ def get_admin_dashboard(db: Session) -> dict:
             "total_links": total_links_by_user.get(user.id, 0),
             "total_clicks": total_clicks_by_user.get(user.id, 0),
             "is_admin": user.is_admin,
+            "is_active": user.is_active,
         }
         for user in users[:6]
     ]
@@ -126,3 +129,89 @@ def get_admin_dashboard(db: Session) -> dict:
         "recent_links": recent_links,
         "recent_activity": _build_activity_feed(users, urls, clicks),
     }
+
+
+def get_admin_users(
+    db: Session,
+    q: str | None,
+    status: str,
+    page: int,
+    page_size: int,
+) -> dict:
+    users_query = db.query(User)
+
+    if q:
+        users_query = users_query.filter(User.email.ilike(f"%{q.strip()}%"))
+
+    if status == "active":
+        users_query = users_query.filter(User.is_active.is_(True))
+    elif status == "suspended":
+        users_query = users_query.filter(User.is_active.is_(False))
+
+    total_items = users_query.count()
+    total_pages = max(1, ceil(total_items / page_size)) if total_items else 1
+    safe_page = min(page, total_pages)
+
+    users = (
+        users_query
+        .order_by(User.created_at.desc())
+        .offset((safe_page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    user_ids = [user.id for user in users]
+    link_counts_by_user = dict(
+        db.query(URL.user_id, func.count(URL.id))
+        .filter(URL.user_id.in_(user_ids))
+        .group_by(URL.user_id)
+        .all()
+    ) if user_ids else {}
+
+    click_counts_by_user = dict(
+        db.query(URL.user_id, func.count(Click.id))
+        .join(Click, Click.url_id == URL.id)
+        .filter(URL.user_id.in_(user_ids))
+        .group_by(URL.user_id)
+        .all()
+    ) if user_ids else {}
+
+    items = [
+        {
+            "id": user.id,
+            "email": user.email,
+            "created_at": user.created_at,
+            "total_links": int(link_counts_by_user.get(user.id, 0)),
+            "total_clicks": int(click_counts_by_user.get(user.id, 0)),
+            "is_admin": user.is_admin,
+            "is_active": user.is_active,
+        }
+        for user in users
+    ]
+
+    return {
+        "items": items,
+        "page": safe_page,
+        "page_size": page_size,
+        "total_items": total_items,
+        "total_pages": total_pages,
+    }
+
+
+def update_user_active_state(db: Session, admin_user_id: int, user_id: int, is_active: bool) -> dict:
+    target_user = db.query(User).filter(User.id == user_id).first()
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if target_user.id == admin_user_id:
+        raise HTTPException(status_code=400, detail="You cannot change your own account status")
+
+    if target_user.is_admin:
+        raise HTTPException(status_code=400, detail="Cannot change status for another admin")
+
+    target_user.is_active = is_active
+    db.commit()
+    db.refresh(target_user)
+
+    return {"id": target_user.id, "is_active": target_user.is_active}
