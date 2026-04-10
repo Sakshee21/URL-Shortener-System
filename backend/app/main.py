@@ -1,13 +1,15 @@
 from datetime import datetime
 
 from fastapi import FastAPI
-from sqlalchemy import inspect, text
+from sqlalchemy import func, inspect, text
 
 from app.core.config import ADMIN_EMAIL, ADMIN_PASSWORD
 from app.core.security import hash_password
 from app.db.database import Base, engine
 from app.db.session import SessionLocal
 from app.models.user import User
+from app.models.url import URL
+from app.models.click import Click
 from app.routes import admin
 from app.routes import auth, url
 from app.models import click as click_model
@@ -117,10 +119,55 @@ def seed_admin_user() -> None:
         db.close()
 
 
+def reconcile_user_created_at_from_activity() -> None:
+    db = SessionLocal()
+    try:
+        users = db.query(User).all()
+        if not users:
+            return
+
+        earliest_urls_by_user = dict(
+            db.query(URL.user_id, func.min(URL.created_at))
+            .filter(URL.user_id.isnot(None))
+            .group_by(URL.user_id)
+            .all()
+        )
+
+        earliest_clicks_by_user = dict(
+            db.query(URL.user_id, func.min(Click.timestamp))
+            .join(Click, Click.url_id == URL.id)
+            .filter(URL.user_id.isnot(None))
+            .group_by(URL.user_id)
+            .all()
+        )
+
+        updated = False
+        for user_entry in users:
+            candidates = [
+                earliest_urls_by_user.get(user_entry.id),
+                earliest_clicks_by_user.get(user_entry.id),
+            ]
+            candidates = [timestamp for timestamp in candidates if timestamp is not None]
+
+            if not candidates or user_entry.created_at is None:
+                continue
+
+            inferred_created_at = min(candidates)
+            if inferred_created_at < user_entry.created_at:
+                user_entry.created_at = inferred_created_at
+                updated = True
+
+        if updated:
+            db.commit()
+    finally:
+        db.close()
+
+
 Base.metadata.create_all(bind=engine)
 ensure_user_columns()
 ensure_url_analytics_columns()
 seed_admin_user()
+reconcile_user_created_at_from_activity()
 
 app.include_router(auth.router)
 app.include_router(url.router)
