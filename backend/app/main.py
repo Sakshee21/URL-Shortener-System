@@ -85,7 +85,11 @@ def ensure_user_columns() -> None:
         if "is_admin" not in column_names:
             connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
 
+        if "is_active" not in column_names:
+            connection.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"))
+
         connection.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+        connection.execute(text("UPDATE users SET is_active = 1 WHERE is_active IS NULL"))
         connection.commit()
 
 
