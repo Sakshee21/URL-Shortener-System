@@ -26,6 +26,9 @@ def authenticate_user(db: Session, email: str, password: str):
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account suspended")
+
     access_token = create_access_token({"sub": user.email})
 
     return access_token
