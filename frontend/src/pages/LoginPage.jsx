@@ -14,8 +14,8 @@ export default function LoginPage() {
     setError("");
 
     try {
-      await login(email, password);
-      navigate("/dashboard");
+      const currentUser = await login(email, password);
+      navigate(currentUser?.is_admin ? "/admin" : "/dashboard");
     } catch (err) {
       setError(err.message || "Something went wrong");
     }

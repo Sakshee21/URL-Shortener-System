@@ -80,6 +80,16 @@ export async function registerUser(email, password) {
 	});
 }
 
+export async function getMe(options = {}) {
+	const { token } = options;
+
+	return apiRequest("/auth/me", {
+		method: "GET",
+		includeAuth: true,
+		token,
+	});
+}
+
 export async function shortenUrl(originalUrl, options = {}) {
 	const { includeAuth = false, token } = options;
 
@@ -124,9 +134,10 @@ export async function updateUrlStatus(urlId, isActive, options = {}) {
 }
 
 export async function getMyAnalytics(options = {}) {
-	const { token, range = "30d" } = options;
+	const { token, range = "30d", includeComparison = false } = options;
+	const comparisonQuery = includeComparison ? "&include_comparison=true" : "";
 
-	return apiRequest(`/urls/me/analytics?range=${encodeURIComponent(range)}`, {
+	return apiRequest(`/urls/me/analytics?range=${encodeURIComponent(range)}${comparisonQuery}`, {
 		method: "GET",
 		includeAuth: true,
 		token,
@@ -134,18 +145,63 @@ export async function getMyAnalytics(options = {}) {
 }
 
 export async function getUrlAnalytics(urlId, options = {}) {
-	const { token, range = "30d" } = options;
+	const { token, range = "30d", includeComparison = false } = options;
+	const comparisonQuery = includeComparison ? "&include_comparison=true" : "";
 
-	return apiRequest(`/urls/${urlId}/analytics?range=${encodeURIComponent(range)}`, {
+	return apiRequest(`/urls/${urlId}/analytics?range=${encodeURIComponent(range)}${comparisonQuery}`, {
 		method: "GET",
 		includeAuth: true,
 		token,
 	});
 }
 
+export async function exportMyAnalyticsCsv(options = {}) {
+	const { token, range = "30d", includeComparison = false } = options;
+	const comparisonQuery = includeComparison ? "&include_comparison=true" : "";
+	const response = await fetch(`${API_BASE_URL}/urls/me/analytics/export?range=${encodeURIComponent(range)}${comparisonQuery}`, {
+		method: "GET",
+		headers: buildHeaders({ includeAuth: true, token }),
+	});
+
+	if (!response.ok) {
+		const error = new Error("Export failed");
+		error.status = response.status;
+		throw error;
+	}
+
+	return response.blob();
+}
+
+export async function exportUrlAnalyticsCsv(urlId, options = {}) {
+	const { token, range = "30d", includeComparison = false } = options;
+	const comparisonQuery = includeComparison ? "&include_comparison=true" : "";
+	const response = await fetch(`${API_BASE_URL}/urls/${urlId}/analytics/export?range=${encodeURIComponent(range)}${comparisonQuery}`, {
+		method: "GET",
+		headers: buildHeaders({ includeAuth: true, token }),
+	});
+
+	if (!response.ok) {
+		const error = new Error("Export failed");
+		error.status = response.status;
+		throw error;
+	}
+
+	return response.blob();
+}
+
 export async function getUrlPreview(shortCode) {
 	return apiRequest(`/urls/preview/${shortCode}`, {
 		method: "GET",
+	});
+}
+
+export async function getAdminDashboard(options = {}) {
+	const { token } = options;
+
+	return apiRequest("/admin/dashboard", {
+		method: "GET",
+		includeAuth: true,
+		token,
 	});
 }
 

@@ -1,7 +1,14 @@
+from datetime import datetime
+
 from fastapi import FastAPI
 from sqlalchemy import inspect, text
 
+from app.core.config import ADMIN_EMAIL, ADMIN_PASSWORD
+from app.core.security import hash_password
 from app.db.database import Base, engine
+from app.db.session import SessionLocal
+from app.models.user import User
+from app.routes import admin
 from app.routes import auth, url
 from app.models import click as click_model
 from app.models import user, url as url_model
@@ -62,11 +69,58 @@ def ensure_url_analytics_columns() -> None:
         connection.commit()
 
 
+def ensure_user_columns() -> None:
+    inspector = inspect(engine)
+    table_names = inspector.get_table_names()
+
+    if "users" not in table_names:
+        return
+
+    column_names = {column["name"] for column in inspector.get_columns("users")}
+
+    with engine.connect() as connection:
+        if "created_at" not in column_names:
+            connection.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))
+
+        if "is_admin" not in column_names:
+            connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+
+        connection.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+        connection.commit()
+
+
+def seed_admin_user() -> None:
+    if not ADMIN_EMAIL or not ADMIN_PASSWORD:
+        return
+
+    db = SessionLocal()
+    try:
+        admin_user = db.query(User).filter(User.email == ADMIN_EMAIL).first()
+
+        if admin_user is None:
+            admin_user = User(
+                email=ADMIN_EMAIL,
+                hashed_password=hash_password(ADMIN_PASSWORD),
+                created_at=datetime.utcnow(),
+                is_admin=True,
+            )
+            db.add(admin_user)
+        elif not admin_user.is_admin:
+            admin_user.is_admin = True
+
+        db.commit()
+    finally:
+        db.close()
+
+
 Base.metadata.create_all(bind=engine)
+ensure_user_columns()
 ensure_url_analytics_columns()
+seed_admin_user()
 
 app.include_router(auth.router)
 app.include_router(url.router)
+app.include_router(admin.router)
 
 @app.get("/")
 def root():

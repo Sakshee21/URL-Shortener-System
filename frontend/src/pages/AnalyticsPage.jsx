@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Shell, StatCard } from "./DashboardLayout";
-import { getMyAnalytics, getUrlAnalytics } from "../services/api";
+import { exportMyAnalyticsCsv, exportUrlAnalyticsCsv, getMyAnalytics, getUrlAnalytics } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 
 function ClicksChart({ dark, data }) {
@@ -99,7 +99,29 @@ const emptyAnalytics = {
   device_breakdown: [],
   browser_breakdown: [],
   recent_activity: [],
+  comparison: null,
 };
+
+function ComparisonBadge({ metric, dark }) {
+  if (!metric) {
+    return null;
+  }
+
+  const trendClass = metric.trend === "up"
+    ? dark ? "bg-green-500/15 text-green-300" : "bg-green-100 text-green-700"
+    : metric.trend === "down"
+      ? dark ? "bg-red-500/15 text-red-300" : "bg-red-100 text-red-700"
+      : dark ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-600";
+
+  const sign = metric.delta > 0 ? "+" : "";
+  const suffix = metric.delta_pct === null ? "" : ` (${sign}${metric.delta_pct.toFixed(1)}%)`;
+
+  return (
+    <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${trendClass}`}>
+      {`${sign}${metric.delta}${suffix}`}
+    </span>
+  );
+}
 
 function formatRelativeTime(value) {
   if (!value) {
@@ -143,11 +165,13 @@ export default function AnalyticsPage() {
   const [animate, setAnimate] = useState(false);
   const [range, setRange] = useState("30d");
   const [selectedUrlId, setSelectedUrlId] = useState("all");
+  const [includeComparison, setIncludeComparison] = useState(true);
   const [analytics, setAnalytics] = useState(emptyAnalytics);
   const [linkAnalytics, setLinkAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isLoadingLinkAnalytics, setIsLoadingLinkAnalytics] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { token, logout } = useAuth();
 
   useEffect(() => {
@@ -177,7 +201,7 @@ export default function AnalyticsPage() {
       setLoading(true);
 
       try {
-        const payload = await getMyAnalytics({ token, range });
+        const payload = await getMyAnalytics({ token, range, includeComparison });
         setAnalytics(payload ?? emptyAnalytics);
       } catch (err) {
         if (err.status === 401) {
@@ -192,7 +216,7 @@ export default function AnalyticsPage() {
     };
 
     fetchAnalytics();
-  }, [token, range, logout]);
+  }, [token, range, includeComparison, logout]);
 
   useEffect(() => {
     if (selectedUrlId === "all") {
@@ -205,7 +229,7 @@ export default function AnalyticsPage() {
       setLoadError("");
 
       try {
-        const payload = await getUrlAnalytics(selectedUrlId, { token, range });
+        const payload = await getUrlAnalytics(selectedUrlId, { token, range, includeComparison });
         setLinkAnalytics(payload);
       } catch (err) {
         if (err.status === 401) {
@@ -220,7 +244,7 @@ export default function AnalyticsPage() {
     };
 
     fetchLinkAnalytics();
-  }, [selectedUrlId, token, range, logout]);
+  }, [selectedUrlId, token, range, includeComparison, logout]);
 
   const card    = dark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-100";
   const heading = dark ? "text-white" : "text-slate-800";
@@ -246,6 +270,35 @@ export default function AnalyticsPage() {
   const selectedShareText = allLinksTotalClicks > 0
     ? `Selected link share: ${selectedSharePct.toFixed(1)}% (${selectedLinkClicks.toLocaleString()} of ${allLinksTotalClicks.toLocaleString()} clicks)`
     : "Selected link share: no clicks recorded yet";
+  const comparison = activeAnalytics.comparison;
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    setLoadError("");
+
+    try {
+      const blob = isLinkScope
+        ? await exportUrlAnalyticsCsv(selectedUrlId, { token, range, includeComparison })
+        : await exportMyAnalyticsCsv({ token, range, includeComparison });
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = isLinkScope
+        ? `analytics-${selectedUrlId}-${range}.csv`
+        : `analytics-all-${range}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      if (err.status === 401) {
+        logout();
+        return;
+      }
+
+      setLoadError("Unable to export analytics CSV");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <Shell
@@ -291,6 +344,22 @@ export default function AnalyticsPage() {
             </svg>
           }/>
         </div>
+        {comparison && !loading && !isLoadingLinkAnalytics && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`rounded-xl border px-3 py-2 ${card}`}>
+              <p className={`text-[10px] ${sub}`}>Clicks vs previous period</p>
+              <div className="mt-1"><ComparisonBadge metric={comparison.total_clicks} dark={dark} /></div>
+            </div>
+            <div className={`rounded-xl border px-3 py-2 ${card}`}>
+              <p className={`text-[10px] ${sub}`}>Unique visitors trend</p>
+              <div className="mt-1"><ComparisonBadge metric={comparison.unique_visitors} dark={dark} /></div>
+            </div>
+            <div className={`rounded-xl border px-3 py-2 ${card}`}>
+              <p className={`text-[10px] ${sub}`}>Avg clicks/day trend</p>
+              <div className="mt-1"><ComparisonBadge metric={comparison.average_clicks_per_day} dark={dark} /></div>
+            </div>
+          </div>
+        )}
 
         {loadError && (
           <div className={`text-sm rounded-xl border px-4 py-3 ${dark ? "text-red-300 border-red-500/40 bg-red-500/10" : "text-red-700 border-red-200 bg-red-50"}`}>
@@ -306,6 +375,17 @@ export default function AnalyticsPage() {
               <p className={`text-xs mt-0.5 ${sub}`}>Daily click volume</p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIncludeComparison((previous) => !previous)}
+                className={`text-xs rounded-lg px-2.5 py-1.5 border transition-colors ${includeComparison
+                  ? dark ? "bg-slate-700 border-slate-600 text-slate-100" : "bg-slate-100 border-slate-300 text-slate-700"
+                  : dark ? "bg-slate-900 border-slate-700 text-slate-400" : "bg-white border-slate-200 text-slate-500"
+                }`}
+                title="Toggle period comparison"
+              >
+                Compare: {includeComparison ? "On" : "Off"}
+              </button>
+
               <select
                 value={selectedUrlId}
                 onChange={(event) => setSelectedUrlId(event.target.value === "all" ? "all" : Number(event.target.value))}
@@ -332,6 +412,14 @@ export default function AnalyticsPage() {
                   </button>
                 ))}
               </div>
+              <button
+                onClick={handleExportCsv}
+                disabled={isExporting}
+                className={`text-xs rounded-lg px-2.5 py-1.5 border transition-colors disabled:opacity-60 ${dark ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                title="Export analytics as CSV"
+              >
+                {isExporting ? "Exporting..." : "Export CSV"}
+              </button>
             </div>
           </div>
           {(loading || isLoadingLinkAnalytics) ? (

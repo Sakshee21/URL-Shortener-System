@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+
 import { Shell, StatCard } from "./DashboardLayout";
+import { getAdminDashboard } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 
 function Spark({ data, color = "#3b82f6" }) {
@@ -43,45 +45,57 @@ function LineChart({ dark, data, color = "#3b82f6" }) {
   );
 }
 
-const USERS = [
-  { id: 1, name: "Arjun Sharma",   email: "arjun@email.com",   links: 12, clicks: 4820, joined: "Jan 5",  status: "active",   spark: [3,8,12,7,15,18,22] },
-  { id: 2, name: "Priya Nair",     email: "priya@email.com",   links: 8,  clicks: 2340, joined: "Jan 14", status: "active",   spark: [5,4,8,12,9,14,11] },
-  { id: 3, name: "Rohan Mehta",    email: "rohan@email.com",   links: 5,  clicks: 980,  joined: "Feb 2",  status: "inactive", spark: [8,6,4,3,2,1,0] },
-  { id: 4, name: "Sneha Reddy",    email: "sneha@email.com",   links: 19, clicks: 7200, joined: "Dec 28", status: "active",   spark: [12,15,18,22,28,25,31] },
-  { id: 5, name: "Vikram Iyer",    email: "vikram@email.com",  links: 3,  clicks: 340,  joined: "Feb 18", status: "active",   spark: [1,2,3,2,4,3,5] },
-  { id: 6, name: "Deepa Kumar",    email: "deepa@email.com",   links: 7,  clicks: 1560, joined: "Feb 10", status: "suspended",spark: [5,3,2,1,0,0,0] },
-];
+function formatRelativeTime(value) {
+  if (!value) {
+    return "-";
+  }
 
-const RECENT_LINKS = [
-  { short: "linksprint.ly/aB3xZ", user: "Sneha Reddy",  clicks: 1842, created: "2 hrs ago",   status: "active" },
-  { short: "linksprint.ly/cD7mQ", user: "Arjun Sharma",  clicks: 934,  created: "5 hrs ago",   status: "active" },
-  { short: "linksprint.ly/zZ9xK", user: "Priya Nair",    clicks: 421,  created: "1 day ago",   status: "active" },
-  { short: "linksprint.ly/mN3pQ", user: "Rohan Mehta",   clicks: 88,   created: "2 days ago",  status: "inactive" },
-  { short: "linksprint.ly/bB7yL", user: "Vikram Iyer",   clicks: 207,  created: "3 days ago",  status: "active" },
-];
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) {
+    return "-";
+  }
 
-const SYSTEM_EVENTS = [
-  { type: "user_signup",  msg: "New user registered: Vikram Iyer",         time: "18 min ago",  variant: "green" },
-  { type: "link_created", msg: "Link linksprint.ly/aB3xZ created by Sneha Reddy", time: "2 hrs ago",   variant: "blue" },
-  { type: "user_suspend", msg: "User Deepa Kumar suspended",                time: "5 hrs ago",   variant: "red" },
-  { type: "link_created", msg: "Link linksprint.ly/cD7mQ created by Arjun",       time: "5 hrs ago",   variant: "blue" },
-  { type: "spike",        msg: "Traffic spike detected on linksprint.ly/aB3xZ",   time: "1 day ago",   variant: "amber" },
-];
+  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp.getTime()) / 1000));
 
-const GROWTH = [
-  { label: "W1", value: 4 },{ label: "W2", value: 7 },{ label: "W3", value: 9 },
-  { label: "W4", value: 14 },{ label: "W5", value: 11 },{ label: "W6", value: 18 },
-  { label: "W7", value: 22 },{ label: "W8", value: 28 },
-];
+  if (diffSeconds < 60) {
+    return `${diffSeconds}s ago`;
+  }
 
-const statusVariant = { active: "green", inactive: "slate", suspended: "red" };
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  return `${Math.floor(diffHours / 24)}d ago`;
+}
+
+const emptyDashboard = {
+  total_users: 0,
+  total_links: 0,
+  total_clicks: 0,
+  active_links: 0,
+  user_growth: [],
+  recent_users: [],
+  recent_links: [],
+  recent_activity: [],
+};
+
+const statusVariant = { active: "green", inactive: "slate", suspended: "red", admin: "blue" };
 
 export default function AdminDashboard() {
   const [dark, setDark] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("users"); // users | links
-  const { logout } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [dashboard, setDashboard] = useState(emptyDashboard);
+  const { token, logout } = useAuth();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -91,12 +105,63 @@ export default function AdminDashboard() {
     setTimeout(() => setAnimate(true), 80);
   }, []);
 
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      setLoadError("");
+      setLoading(true);
+
+      try {
+        const payload = await getAdminDashboard({ token });
+        setDashboard(payload ?? emptyDashboard);
+      } catch (err) {
+        if (err.status === 401) {
+          logout();
+          return;
+        }
+
+        setLoadError(err.message || "Unable to load admin dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, [token, logout]);
+
   const card   = dark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-100";
   const h2cls  = dark ? "text-white" : "text-slate-800";
   const subcls = dark ? "text-slate-500" : "text-slate-400";
 
-  const filteredUsers = USERS.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) || u.email.includes(search)
+  const USERS = dashboard.recent_users.map((user) => ({
+    id: user.id,
+    name: user.email,
+    email: user.email,
+    links: user.total_links,
+    clicks: user.total_clicks,
+    joined: new Date(user.created_at).toLocaleDateString(),
+    status: user.is_admin ? "admin" : "active",
+    spark: [0, 0, 0, 0, 0, 0, Math.max(user.total_clicks, 1)],
+  }));
+
+  const RECENT_LINKS = dashboard.recent_links.map((link) => ({
+    short: link.short_url.replace(/^https?:\/\//, ""),
+    user: link.owner_email || "Guest",
+    clicks: link.click_count,
+    created: formatRelativeTime(link.created_at),
+    status: link.is_active ? "active" : "inactive",
+  }));
+
+  const SYSTEM_EVENTS = dashboard.recent_activity.map((event) => ({
+    type: event.type,
+    msg: event.message,
+    time: formatRelativeTime(event.timestamp),
+    variant: event.type === "signup" ? "green" : event.type === "link_created" ? "blue" : "amber",
+  }));
+
+  const GROWTH = dashboard.user_growth;
+
+  const filteredUsers = USERS.filter((user) =>
+    user.name.toLowerCase().includes(search.toLowerCase()) || user.email.includes(search)
   );
 
   return (
@@ -107,36 +172,42 @@ export default function AdminDashboard() {
       isAdmin={true}
       onSignOut={logout}
       title="Admin Panel"
-      subtitle="Platform overview and user management"
+      subtitle="Live platform overview"
     >
       <div className={`transition-all duration-700 ease-out space-y-6 ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard dark={dark} label="Total Users" value={USERS.length} sub="+2 this week" accent="blue" icon={
+          <StatCard dark={dark} label="Total Users" value={dashboard.total_users.toLocaleString()} sub="All registered accounts" accent="blue" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
             </svg>
           }/>
-          <StatCard dark={dark} label="Total Links" value="54" sub="Across all users" accent="violet" icon={
+          <StatCard dark={dark} label="Total Links" value={dashboard.total_links.toLocaleString()} sub="All shortened URLs" accent="violet" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
           }/>
-          <StatCard dark={dark} label="Total Clicks" value="17,240" sub="All time" accent="green" icon={
+          <StatCard dark={dark} label="Total Clicks" value={dashboard.total_clicks.toLocaleString()} sub="Across the platform" accent="green" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
           }/>
-          <StatCard dark={dark} label="Suspended" value="1" sub="Needs review" accent="amber" icon={
+          <StatCard dark={dark} label="Active Links" value={dashboard.active_links.toLocaleString()} sub="Currently redirecting" accent="amber" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
           }/>
         </div>
+
+        {loadError && (
+          <div className={`rounded-xl border px-4 py-3 text-sm ${dark ? "border-red-500/40 bg-red-500/10 text-red-300" : "border-red-200 bg-red-50 text-red-700"}`}>
+            {loadError}
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-5">
           <div className={`lg:col-span-2 rounded-2xl border p-5 transition-colors duration-300 ${card}`}>

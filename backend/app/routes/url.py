@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import BASE_URL, FRONTEND_BASE_URL
@@ -24,6 +24,8 @@ from app.services.security_service import assert_url_not_blacklisted
 from app.services.url_service import (
     build_short_url,
     create_short_url,
+    export_url_analytics_csv,
+    export_user_analytics_csv,
     get_url_analytics,
     get_url_by_short_code,
     get_user_analytics,
@@ -111,20 +113,77 @@ def update_my_url_status(
 @router.get("/urls/me/analytics", response_model=UserAnalyticsResponse)
 def get_my_analytics(
     range: Literal["7d", "30d", "90d"] = Query(default="30d"),
+    include_comparison: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return get_user_analytics(db=db, user_id=current_user.id, range_value=range)
+    return get_user_analytics(
+        db=db,
+        user_id=current_user.id,
+        range_value=range,
+        include_comparison=include_comparison,
+    )
 
 
 @router.get("/urls/{url_id}/analytics", response_model=URLAnalyticsResponse)
 def get_link_analytics(
     url_id: int,
     range: Literal["7d", "30d", "90d"] = Query(default="30d"),
+    include_comparison: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    return get_url_analytics(db=db, user_id=current_user.id, url_id=url_id, range_value=range)
+    return get_url_analytics(
+        db=db,
+        user_id=current_user.id,
+        url_id=url_id,
+        range_value=range,
+        include_comparison=include_comparison,
+    )
+
+
+@router.get("/urls/me/analytics/export")
+def export_my_analytics(
+    range: Literal["7d", "30d", "90d"] = Query(default="30d"),
+    include_comparison: bool = Query(default=False),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    csv_text = export_user_analytics_csv(
+        db=db,
+        user_id=current_user.id,
+        range_value=range,
+        include_comparison=include_comparison,
+    )
+    filename = f"analytics-all-{range}.csv"
+    return StreamingResponse(
+        iter([csv_text]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/urls/{url_id}/analytics/export")
+def export_link_analytics(
+    url_id: int,
+    range: Literal["7d", "30d", "90d"] = Query(default="30d"),
+    include_comparison: bool = Query(default=False),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    csv_text = export_url_analytics_csv(
+        db=db,
+        user_id=current_user.id,
+        url_id=url_id,
+        range_value=range,
+        include_comparison=include_comparison,
+    )
+    filename = f"analytics-link-{url_id}-{range}.csv"
+    return StreamingResponse(
+        iter([csv_text]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/urls/preview/{short_code}", response_model=URLWarningResponse)

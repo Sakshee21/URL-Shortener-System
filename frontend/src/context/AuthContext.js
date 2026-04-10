@@ -3,29 +3,12 @@ import { createContext, createElement, useEffect, useMemo, useState } from "reac
 import {
 	clearStoredToken,
 	getStoredToken,
+	getMe,
 	loginUser,
 	setStoredToken,
 } from "../services/api";
 
 export const AuthContext = createContext(null);
-
-const decodeJwtPayload = (token) => {
-	try {
-		const payload = token.split(".")[1];
-		if (!payload) return null;
-
-		const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-		const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-		return JSON.parse(window.atob(padded));
-	} catch {
-		return null;
-	}
-};
-
-const mapTokenToUser = (token) => {
-	const payload = decodeJwtPayload(token);
-	return payload?.sub ? { email: payload.sub } : null;
-};
 
 export function AuthProvider({ children }) {
 	const [token, setToken] = useState(null);
@@ -35,20 +18,36 @@ export function AuthProvider({ children }) {
 	useEffect(() => {
 		const existingToken = getStoredToken();
 
-		if (existingToken) {
-			setToken(existingToken);
-			setUser(mapTokenToUser(existingToken));
-		}
+		const loadUser = async () => {
+			if (!existingToken) {
+				setIsLoading(false);
+				return;
+			}
 
-		setIsLoading(false);
+			setToken(existingToken);
+
+			try {
+				const currentUser = await getMe({ token: existingToken });
+				setUser(currentUser);
+			} catch {
+				clearStoredToken();
+				setToken(null);
+				setUser(null);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		loadUser();
 	}, []);
 
 	const login = async (email, password) => {
 		const response = await loginUser(email, password);
 		setStoredToken(response.access_token);
 		setToken(response.access_token);
-		setUser(mapTokenToUser(response.access_token));
-		return response;
+		const currentUser = await getMe({ token: response.access_token });
+		setUser(currentUser);
+		return currentUser;
 	};
 
 	const logout = () => {

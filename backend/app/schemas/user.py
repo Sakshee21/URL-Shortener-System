@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr
 
 class UserCreate(BaseModel):
@@ -15,6 +17,8 @@ class Token(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
+    is_admin: bool
+    created_at: datetime | None = None
 
     class Config:
         from_attributes = True

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -76,6 +76,20 @@ class AnalyticsLastAccessedItem(BaseModel):
     timestamp: datetime
 
 
+class AnalyticsComparisonMetric(BaseModel):
+    current: float
+    previous: float
+    delta: float
+    delta_pct: Optional[float] = None
+    trend: Literal["up", "down", "flat"]
+
+
+class AnalyticsComparison(BaseModel):
+    total_clicks: AnalyticsComparisonMetric
+    unique_visitors: AnalyticsComparisonMetric
+    average_clicks_per_day: AnalyticsComparisonMetric
+
+
 class UserAnalyticsResponse(BaseModel):
     range: str
     total_clicks: int
@@ -88,6 +102,7 @@ class UserAnalyticsResponse(BaseModel):
     device_breakdown: list[AnalyticsBreakdownItem]
     browser_breakdown: list[AnalyticsBreakdownItem]
     recent_activity: list[AnalyticsRecentActivityItem]
+    comparison: Optional[AnalyticsComparison] = None
 
 
 class URLAnalyticsResponse(BaseModel):
@@ -104,6 +119,7 @@ class URLAnalyticsResponse(BaseModel):
     device_breakdown: list[AnalyticsBreakdownItem]
     browser_breakdown: list[AnalyticsBreakdownItem]
     recent_activity: list[AnalyticsRecentActivityItem]
+    comparison: Optional[AnalyticsComparison] = None
 
 
 class URLWarningResponse(BaseModel):
