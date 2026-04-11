@@ -262,3 +262,128 @@ def test_admin_can_list_users_and_suspend_user(client, admin_token, db_session):
         data={"username": "member@test.com", "password": "pass123"},
     )
     assert relogin_response.status_code == 403
+
+
+def test_register_duplicate_email_returns_400(client):
+    first_response = client.post(
+        "/auth/register",
+        json={"email": "dupe@test.com", "password": "pass123"},
+    )
+    second_response = client.post(
+        "/auth/register",
+        json={"email": "dupe@test.com", "password": "pass123"},
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 400
+    assert "already" in second_response.json()["detail"].lower()
+
+
+def test_login_with_wrong_password_returns_401(client):
+    _register_and_login(client, "wrong-pass@test.com", "pass123")
+
+    login_response = client.post(
+        "/auth/login",
+        data={"username": "wrong-pass@test.com", "password": "incorrect"},
+    )
+
+    assert login_response.status_code == 401
+    assert "invalid credentials" in login_response.json()["detail"].lower()
+
+
+def test_invalid_url_payload_rejected(client, user_token):
+    response = client.post(
+        "/urls",
+        json={"original_url": "not-a-url"},
+        headers=_auth_header(user_token),
+    )
+
+    assert response.status_code == 400
+    assert "invalid url" in response.json()["detail"].lower()
+
+
+def test_rate_limit_for_create_url_returns_429(client, user_token):
+    last_response = None
+
+    for index in range(11):
+        last_response = client.post(
+            "/urls",
+            json={"original_url": f"https://ratelimit-{index}.dev"},
+            headers=_auth_header(user_token),
+        )
+
+    assert last_response is not None
+    assert last_response.status_code == 429
+    assert "rate limit" in last_response.json()["detail"].lower()
+
+
+def test_deleted_url_cannot_be_accessed_via_go_route(client, user_token):
+    create_response = client.post(
+        "/urls",
+        json={"original_url": "https://inactive-go.dev"},
+        headers=_auth_header(user_token),
+    )
+    assert create_response.status_code == 200
+    created = create_response.json()
+    url_id = created["id"]
+    short_code = created["short_code"]
+
+    delete_response = client.delete(f"/urls/{url_id}", headers=_auth_header(user_token))
+    assert delete_response.status_code == 200
+
+    go_response = client.get(f"/urls/{short_code}/go", follow_redirects=False)
+    assert go_response.status_code == 404
+
+
+def test_cross_user_cannot_read_another_link_analytics(client):
+    owner_token = _register_and_login(client, "owner@test.com", "pass123")
+    outsider_token = _register_and_login(client, "outsider@test.com", "pass123")
+
+    create_response = client.post(
+        "/urls",
+        json={"original_url": "https://ownership-analytics.dev"},
+        headers=_auth_header(owner_token),
+    )
+    assert create_response.status_code == 200
+    owner_url_id = create_response.json()["id"]
+
+    outsider_response = client.get(
+        f"/urls/{owner_url_id}/analytics",
+        headers=_auth_header(outsider_token),
+    )
+    assert outsider_response.status_code == 404
+
+
+def test_guest_link_is_attached_when_authenticated_user_reuses_same_url(client, user_token):
+    guest_create = client.post(
+        "/urls",
+        json={"original_url": "https://adopt-owner.dev/path"},
+    )
+    assert guest_create.status_code == 200
+    guest_payload = guest_create.json()
+    assert guest_payload["user_id"] is None
+
+    owned_create = client.post(
+        "/urls",
+        json={"original_url": "https://adopt-owner.dev/path"},
+        headers=_auth_header(user_token),
+    )
+    assert owned_create.status_code == 200
+    owned_payload = owned_create.json()
+
+    assert owned_payload["id"] == guest_payload["id"]
+    assert owned_payload["user_id"] is not None
+
+
+def test_admin_cannot_suspend_self(client, admin_token):
+    me_response = client.get("/auth/me", headers=_auth_header(admin_token))
+    assert me_response.status_code == 200
+    admin_id = me_response.json()["id"]
+
+    suspend_response = client.patch(
+        f"/admin/users/{admin_id}/status",
+        json={"is_active": False},
+        headers=_auth_header(admin_token),
+    )
+    assert suspend_response.status_code == 400
+    assert "cannot change your own" in suspend_response.json()["detail"].lower()
