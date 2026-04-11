@@ -43,6 +43,8 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 ### DevOps & Tooling
 - Docker & Docker Compose
 - Git & GitHub
+- GitHub Actions (CI/CD)
+- Render (backend + frontend deployment)
 - VS Code
 - WSL (Linux development environment)
 
@@ -65,6 +67,10 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 
 ```bash
 URL-SHORTENER-SYSTEM/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── deploy.yml
 ├── backend/
 │   ├── app/
 │   │   ├── core/
@@ -78,8 +84,8 @@ URL-SHORTENER-SYSTEM/
 │   │   └── main.py
 │   ├── .dockerignore
 │   ├── Dockerfile
+│   ├── requirements-dev.txt
 │   └── requirements.txt
-├── docs/
 ├── frontend/
 │   ├── public/
 │   ├── src/
@@ -99,6 +105,18 @@ URL-SHORTENER-SYSTEM/
 │   ├── postcss.config.js
 │   ├── tailwind.config.js
 │   └── vite.config.js
+├── docs/
+│   └── design/
+│       ├── diagrams/
+│       └── wireframes/
+├── tests/
+│   ├── conftest.py
+│   ├── test_integration_flows.py
+│   └── test_regression_flows.py
+├── reports/
+│   └── mutatest-*.rst
+├── pytest.ini
+├── mutatest.ini
 ├── .gitignore
 ├── docker-compose.yml
 ├── LICENSE
@@ -411,6 +429,8 @@ docker compose logs -f        # View container logs
 | React       | Frontend UI                   |
 | Docker      | Containerization              |
 | Git         | Version control               |
+| GitHub Actions | CI/CD automation          |
+| Render      | Cloud deployment              |
 | VS Code     | Code editor                   |
 | WSL         | Linux development environment |
 
