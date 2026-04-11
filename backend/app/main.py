@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from sqlalchemy import func, inspect, text
 
-from app.core.config import ADMIN_EMAIL, ADMIN_PASSWORD
+from app.core.config import ADMIN_EMAIL, ADMIN_PASSWORD, FRONTEND_BASE_URL
 from app.core.security import hash_password
 from app.db.database import Base, engine
 from app.db.session import SessionLocal
@@ -19,9 +19,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+
+if FRONTEND_BASE_URL and FRONTEND_BASE_URL not in allowed_origins:
+    allowed_origins.append(FRONTEND_BASE_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
