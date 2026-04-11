@@ -50,7 +50,6 @@ export default function DashboardPage() {
   const [animate, setAnimate] = useState(false);
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState(null);
-  const [showForm, setShowForm] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [filter, setFilter] = useState("all"); // all | active | inactive
   const [links, setLinks] = useState([]);
@@ -440,3 +439,4 @@ export default function DashboardPage() {
     </Shell>
   );
 }
+

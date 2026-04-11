@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Shell, StatCard } from "./DashboardLayout";
 import { getAdminDashboard, getAdminUsers, updateAdminUserStatus } from "../services/api";
@@ -89,7 +89,7 @@ function Pill({ label, variant = "blue", dark }) {
   return <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${v[variant]}`}>{label}</span>;
 }
 
-function LineChart({ dark, data, color = "#3b82f6" }) {
+function LineChart({ data, color = "#3b82f6" }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const W = 100;
   const H = 50;
@@ -141,7 +141,7 @@ const emptyUsersPayload = {
   total_pages: 1,
 };
 
-const statusVariant = { active: "green", inactive: "slate", suspended: "red", admin: "blue" };
+const STATUS_VARIANT = { active: "green", inactive: "slate", suspended: "red", admin: "blue" };
 const sortByNewest = (items = []) => [...items].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
 
 export default function AdminDashboard() {
@@ -268,7 +268,7 @@ export default function AdminDashboard() {
     spark: [0, 0, 0, 0, 0, 0, Math.max(entry.total_clicks, 1)],
   }));
 
-  const recentLinks = dashboard.recent_links.map((link) => ({
+  const RECENT_LINKS = dashboard.recent_links.map((link) => ({
     short: link.short_url.replace(/^https?:\/\//, ""),
     user: link.owner_email || "Guest",
     clicks: link.click_count,
@@ -517,3 +517,5 @@ export default function AdminDashboard() {
     </Shell>
   );
 }
+
+

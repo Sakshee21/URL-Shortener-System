@@ -34,29 +34,30 @@ function ClicksChart({ dark, data }) {
 
 function DonutChart({ dark, segments, size = 100 }) {
   const total = segments.reduce((s, d) => s + d.value, 0);
-  let cumulative = 0;
   const r = 38; const cx = 50; const cy = 50;
   const circumference = 2 * Math.PI * r;
+
+  const segmentArcs = segments.reduce((arcs, seg) => {
+    const pct = total > 0 ? seg.value / total : 0;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    const offset = arcs.length === 0 ? 0 : arcs[arcs.length - 1].offset + arcs[arcs.length - 1].dash;
+
+    return [...arcs, { seg, dash, gap, offset }];
+  }, []);
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" width={size} height={size} className="-rotate-90">
-        {segments.map((seg, i) => {
-          const pct    = seg.value / total;
-          const dash   = pct * circumference;
-          const gap    = circumference - dash;
-          const offset = cumulative * circumference;
-          cumulative  += pct;
-          return (
-            <circle
-              key={i} cx={cx} cy={cy} r={r}
-              fill="none" stroke={seg.color} strokeWidth="14"
-              strokeDasharray={`${dash} ${gap}`}
-              strokeDashoffset={-offset}
-              className="transition-all duration-700"
-            />
-          );
-        })}
+        {segmentArcs.map(({ seg, dash, gap, offset }, i) => (
+          <circle
+            key={i} cx={cx} cy={cy} r={r}
+            fill="none" stroke={seg.color} strokeWidth="14"
+            strokeDasharray={`${dash} ${gap}`}
+            strokeDashoffset={-offset}
+            className="transition-all duration-700"
+          />
+        ))}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <span className={`text-xs font-bold ${dark ? "text-white" : "text-slate-800"}`}>{total}</span>
@@ -529,3 +530,4 @@ export default function AnalyticsPage() {
     </Shell>
   );
 }
+
