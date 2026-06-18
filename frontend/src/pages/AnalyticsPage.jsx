@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Shell, StatCard } from "./DashboardLayout";
+import { LoadingState } from "../components/ui/LoadingState";
 import { exportMyAnalyticsCsv, exportUrlAnalyticsCsv, getMyAnalytics, getUrlAnalytics } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../context/ThemeContext";
+import { formatRelativeTime } from "../utils/dateTime";
 
 function ClicksChart({ dark, data }) {
   const max = Math.max(...data.map(d => d.clicks), 1);
@@ -124,45 +127,8 @@ function ComparisonBadge({ metric, dark }) {
   );
 }
 
-function formatRelativeTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  let parsedValue = value;
-  if (typeof value === "string") {
-    const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value);
-    parsedValue = hasTimezone ? value : `${value}Z`;
-  }
-
-  const timestamp = new Date(parsedValue);
-  if (Number.isNaN(timestamp.getTime())) {
-    return "-";
-  }
-
-  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp.getTime()) / 1000));
-
-  if (diffSeconds < 60) {
-    return `${diffSeconds}s ago`;
-  }
-
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
 export default function AnalyticsPage() {
   const [searchParams] = useSearchParams();
-  const [dark, setDark] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [range, setRange] = useState("30d");
   const [selectedUrlId, setSelectedUrlId] = useState("all");
@@ -174,6 +140,7 @@ export default function AnalyticsPage() {
   const [isLoadingLinkAnalytics, setIsLoadingLinkAnalytics] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { token, logout } = useAuth();
+  const { dark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -304,7 +271,7 @@ export default function AnalyticsPage() {
   return (
     <Shell
       dark={dark}
-      onToggleTheme={() => setDark(d => !d)}
+      onToggleTheme={toggleTheme}
       activePage="analytics"
       isAdmin={false}
       onSignOut={logout}
@@ -424,7 +391,9 @@ export default function AnalyticsPage() {
             </div>
           </div>
           {(loading || isLoadingLinkAnalytics) ? (
-            <div className={`text-sm py-12 text-center ${sub}`}>Loading analytics...</div>
+            <div className="py-4">
+              <LoadingState dark={dark} message="Loading analytics..." />
+            </div>
           ) : clicksData.length === 0 ? (
             <div className={`text-sm py-12 text-center ${sub}`}>No click data for this range yet.</div>
           ) : (

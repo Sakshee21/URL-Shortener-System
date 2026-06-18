@@ -2,11 +2,12 @@ from collections import Counter
 import csv
 from datetime import datetime, timedelta
 import io
-from uuid import uuid4
+import secrets
 from typing import Literal
 from urllib.parse import urlparse
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import BASE_URL, MIN_SHORT_CODE_LENGTH
@@ -63,6 +64,14 @@ def _get_existing_url(db: Session, original_url: str) -> URL | None:
     return db.query(URL).filter(URL.original_url == original_url).first()
 
 
+def _generate_short_code() -> str:
+    return secrets.token_urlsafe(8)
+
+
+def _is_legacy_predictable_short_code(url_entry: URL) -> bool:
+    return url_entry.short_code == encode_base62(url_entry.id)
+
+
 def create_short_url(db: Session, original_url: str, user_id: int | None = None) -> URL:
     validated_url = validate_original_url(original_url)
     parsed = urlparse(validated_url)
@@ -77,6 +86,19 @@ def create_short_url(db: Session, original_url: str, user_id: int | None = None)
     existing_url = _get_existing_url(db, validated_url)
     if existing_url:
         updated = False
+
+        if _is_legacy_predictable_short_code(existing_url):
+            for _ in range(8):
+                existing_url.short_code = _generate_short_code()
+
+                try:
+                    db.commit()
+                    db.refresh(existing_url)
+                    return existing_url
+                except IntegrityError:
+                    db.rollback()
+
+            raise HTTPException(status_code=500, detail="Unable to generate a unique short code")
 
         if not existing_url.is_active:
             existing_url.is_active = True
@@ -112,29 +134,33 @@ def create_short_url(db: Session, original_url: str, user_id: int | None = None)
 
         return existing_url
 
-    temp_code = f"tmp_{uuid4().hex}"
-    url_entry = URL(
-        original_url=validated_url,
-        short_code=temp_code,
-        user_id=user_id,
-        risk_level=risk_level,
-        risk_score=risk_score,
-        page_title=preview.get("page_title"),
-        page_description=preview.get("page_description"),
-        favicon_url=preview.get("favicon_url"),
-        preview_image_url=preview.get("preview_image_url"),
-    )
+    for _ in range(8):
+        url_entry = URL(
+            original_url=validated_url,
+            short_code=_generate_short_code(),
+            user_id=user_id,
+            risk_level=risk_level,
+            risk_score=risk_score,
+            page_title=preview.get("page_title"),
+            page_description=preview.get("page_description"),
+            favicon_url=preview.get("favicon_url"),
+            preview_image_url=preview.get("preview_image_url"),
+        )
 
-    db.add(url_entry)
-    db.commit()
-    db.refresh(url_entry)
+        db.add(url_entry)
 
-    url_entry.short_code = encode_base62(url_entry.id)
+        try:
+            db.commit()
+            db.refresh(url_entry)
+            return url_entry
+        except IntegrityError:
+            db.rollback()
 
-    db.commit()
-    db.refresh(url_entry)
+            existing_url = _get_existing_url(db, validated_url)
+            if existing_url:
+                return existing_url
 
-    return url_entry
+    raise HTTPException(status_code=500, detail="Unable to generate a unique short code")
 
 
 def build_short_url(short_code: str) -> str:

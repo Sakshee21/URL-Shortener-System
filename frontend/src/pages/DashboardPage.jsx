@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Shell, StatCard } from "./DashboardLayout";
+import { LoadingState } from "../components/ui/LoadingState";
 import { deleteUrl, getMyUrls, shortenUrl, updateUrlStatus } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../context/ThemeContext";
+import { formatISTDate, formatISTDateTime } from "../utils/dateTime";
 
 function MiniBar({ data, color = "#3b82f6" }) {
   const max = Math.max(...data, 1);
@@ -37,16 +40,13 @@ const mapApiLinkToUi = (item) => ({
   short: item.short_url.replace(/^https?:\/\//, ""),
   shortUrl: item.short_url,
   clicks: item.click_count ?? 0,
-  created: new Date(item.created_at).toISOString().slice(0, 10),
-  lastAccessed: item.last_accessed_at
-    ? new Date(item.last_accessed_at).toLocaleString()
-    : "-",
+  created: formatISTDate(item.created_at),
+  lastAccessed: item.last_accessed_at ? formatISTDateTime(item.last_accessed_at) : "-",
   active: item.is_active ?? true,
   trend: [0, 0, 0, 0, 0, 0, 0],
 });
 
 export default function DashboardPage() {
-  const [dark, setDark] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState(null);
@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [actionError, setActionError] = useState("");
   const [pendingActionIds, setPendingActionIds] = useState([]);
   const { token, logout } = useAuth();
+  const { dark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -226,7 +227,7 @@ export default function DashboardPage() {
   return (
     <Shell
       dark={dark}
-      onToggleTheme={() => setDark(d => !d)}
+      onToggleTheme={toggleTheme}
       activePage="dashboard"
       isAdmin={false}
       onSignOut={logout}
@@ -235,7 +236,15 @@ export default function DashboardPage() {
     >
       <div className={`transition-all duration-700 ease-out space-y-6 ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
 
+        {isLoadingLinks && links.length === 0 && (
+          <div className={`rounded-2xl border p-5 ${dark ? "border-slate-800 bg-slate-900/50" : "border-slate-100 bg-white"}`}>
+            <LoadingState dark={dark} message="Loading your dashboard..." />
+          </div>
+        )}
+
         {/* ── Stat cards ── */}
+        {!isLoadingLinks && (
+        <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard dark={dark} label="Total Links" value={links.length} sub="All time" accent="blue" icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -321,7 +330,9 @@ export default function DashboardPage() {
               <div className={`py-4 text-center text-sm ${dark ? "text-red-400" : "text-red-600"}`}>{actionError}</div>
             )}
             {isLoadingLinks && (
-              <div className={`py-12 text-center text-sm ${dark ? "text-slate-600" : "text-slate-400"}`}>Loading links...</div>
+              <div className="py-8">
+                <LoadingState dark={dark} message="Refreshing your links..." />
+              </div>
             )}
             {loadError && (
               <div className={`py-4 text-center text-sm ${dark ? "text-red-400" : "text-red-600"}`}>{loadError}</div>
@@ -435,6 +446,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </Shell>
   );

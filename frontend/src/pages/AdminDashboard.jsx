@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { Shell, StatCard } from "./DashboardLayout";
+import { LoadingState } from "../components/ui/LoadingState";
 import { getAdminDashboard, getAdminUsers, updateAdminUserStatus } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../context/ThemeContext";
+import { formatISTDate, formatRelativeTime } from "../utils/dateTime";
 
 function UsersIcon() {
   return (
@@ -109,19 +112,6 @@ function LineChart({ data, color = "#3b82f6" }) {
   );
 }
 
-function formatRelativeTime(value) {
-  if (!value) return "-";
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) return "-";
-  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp.getTime()) / 1000));
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${Math.floor(diffHours / 24)}d ago`;
-}
-
 const emptyDashboard = {
   total_users: 0,
   total_links: 0,
@@ -145,7 +135,6 @@ const STATUS_VARIANT = { active: "green", inactive: "slate", suspended: "red", a
 const sortByNewest = (items = []) => [...items].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
 
 export default function AdminDashboard() {
-  const [dark, setDark] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [dashboard, setDashboard] = useState(emptyDashboard);
   const [usersPayload, setUsersPayload] = useState(emptyUsersPayload);
@@ -159,6 +148,7 @@ export default function AdminDashboard() {
   const [actionError, setActionError] = useState("");
   const [pendingUserIds, setPendingUserIds] = useState([]);
   const { token, user, logout } = useAuth();
+  const { dark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -263,17 +253,9 @@ export default function AdminDashboard() {
     name: entry.email,
     links: entry.total_links,
     clicks: entry.total_clicks,
-    joined: new Date(entry.created_at).toLocaleDateString(),
+    joined: formatISTDate(entry.created_at),
     status: entry.is_admin ? "admin" : entry.is_active ? "active" : "suspended",
     spark: [0, 0, 0, 0, 0, 0, Math.max(entry.total_clicks, 1)],
-  }));
-
-  const RECENT_LINKS = dashboard.recent_links.map((link) => ({
-    short: link.short_url.replace(/^https?:\/\//, ""),
-    user: link.owner_email || "Guest",
-    clicks: link.click_count,
-    created: formatRelativeTime(link.created_at),
-    status: link.is_active ? "active" : "inactive",
   }));
 
   const systemEvents = sortByNewest(
@@ -288,7 +270,7 @@ export default function AdminDashboard() {
   return (
     <Shell
       dark={dark}
-      onToggleTheme={() => setDark((value) => !value)}
+      onToggleTheme={toggleTheme}
       activePage="admin"
       isAdmin={true}
       onSignOut={logout}
@@ -318,7 +300,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             {loadingDashboard ? (
-              <p className={`text-sm ${sub}`}>Loading growth...</p>
+              <LoadingState dark={dark} message="Loading growth analytics..." />
             ) : (
               <>
                 <LineChart data={dashboard.user_growth} color="#3b82f6" />
@@ -409,7 +391,9 @@ export default function AdminDashboard() {
               )}
               <div className="divide-y" style={{ borderColor: dark ? "rgba(30,41,59,0.8)" : "rgba(241,245,249,1)" }}>
                 {loadingUsers ? (
-                  <div className={`py-12 text-center text-sm ${sub}`}>Loading users...</div>
+                  <div className="py-4">
+                    <LoadingState dark={dark} message="Loading users..." />
+                  </div>
                 ) : users.length === 0 ? (
                   <div className={`py-12 text-center text-sm ${sub}`}>No users found.</div>
                 ) : (

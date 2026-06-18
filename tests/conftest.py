@@ -1,4 +1,5 @@
 from pathlib import Path
+import tempfile
 import sys
 
 import pytest
@@ -16,11 +17,11 @@ from app.db.session import get_db  # noqa: E402
 from app.dependencies.rate_limit_dependency import RATE_LIMIT_STORAGE  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.user import User  # noqa: E402
+import app.services.auth_service as auth_service  # noqa: E402
 import app.services.url_service as url_service  # noqa: E402
 
 
-TEST_DB_DIR = ROOT_DIR / "tests" / ".artifacts"
-TEST_DB_DIR.mkdir(parents=True, exist_ok=True)
+TEST_DB_DIR = Path(tempfile.mkdtemp(prefix="url_shortener_tests_"))
 TEST_DB_URL = f"sqlite:///{(TEST_DB_DIR / 'test_url_shortener.db').as_posix()}"
 
 test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
@@ -41,6 +42,8 @@ def isolate_db_and_overrides(monkeypatch):
     Base.metadata.create_all(bind=test_engine)
     RATE_LIMIT_STORAGE.clear()
     app.dependency_overrides[get_db] = override_get_db
+    monkeypatch.setattr(auth_service, "hash_password", lambda password: password)
+    monkeypatch.setattr(auth_service, "verify_password", lambda plain_password, hashed_password: plain_password == hashed_password)
 
     monkeypatch.setattr(
         url_service,

@@ -1,4 +1,7 @@
+from app.models.url import URL
 from app.models.user import User
+from app.services import url_service
+from app.services.url_service import encode_base62
 
 
 def _register_and_login(client, email, password):
@@ -46,6 +49,59 @@ def test_url_normalization_deduplicates(client, user_token):
     second_payload = second.json()
     assert first_payload["id"] == second_payload["id"]
     assert first_payload["short_code"] == second_payload["short_code"]
+
+
+def test_short_code_generation_uses_random_tokens_and_retries_collisions(client, user_token, monkeypatch):
+    tokens = iter(["random-token-1", "random-token-1", "random-token-2"])
+    monkeypatch.setattr(url_service.secrets, "token_urlsafe", lambda _size: next(tokens))
+
+    first = client.post(
+        "/urls",
+        json={"original_url": "https://random-code-a.dev"},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    second = client.post(
+        "/urls",
+        json={"original_url": "https://random-code-b.dev"},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    first_payload = first.json()
+    second_payload = second.json()
+    assert first_payload["short_code"] == "random-token-1"
+    assert second_payload["short_code"] == "random-token-2"
+    assert first_payload["short_code"] != second_payload["short_code"]
+
+
+def test_legacy_short_code_is_rotated_on_reuse(client, user_token, db_session):
+    create_response = client.post(
+        "/urls",
+        json={"original_url": "https://legacy-code.dev/path"},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert create_response.status_code == 200
+
+    created = create_response.json()
+    url_entry = db_session.query(URL).filter(URL.id == created["id"]).first()
+    assert url_entry is not None
+
+    legacy_code = encode_base62(url_entry.id)
+    url_entry.short_code = legacy_code
+    db_session.commit()
+
+    reused_response = client.post(
+        "/urls",
+        json={"original_url": "https://legacy-code.dev/path"},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert reused_response.status_code == 200
+
+    reused = reused_response.json()
+    assert reused["id"] == created["id"]
+    assert reused["short_code"] != legacy_code
 
 
 def test_suspended_user_cannot_login(client, db_session):

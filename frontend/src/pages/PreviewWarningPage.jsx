@@ -56,7 +56,13 @@ export default function PreviewWarningPage() {
             Review this destination before you continue.
           </p>
 
-          {isLoading && <p className="mt-6 text-sm text-slate-500">Loading preview...</p>}
+          {isLoading && (
+            <div className="mt-6 animate-pulse space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="h-4 w-40 rounded-full bg-slate-200" />
+              <div className="h-3 w-3/4 rounded-full bg-slate-200" />
+              <div className="h-24 rounded-xl bg-slate-200" />
+            </div>
+          )}
 
           {!isLoading && error && (
             <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">

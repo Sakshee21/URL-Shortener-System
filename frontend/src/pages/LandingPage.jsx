@@ -110,12 +110,19 @@ export default function LandingPage() {
         </p>
 
         {/* Proper Component Usage */}
-        <URLForm onShorten={handleShorten} />
+        <URLForm onShorten={handleShorten} isLoading={isLoading} />
 
         {isLoading && (
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-            Shortening URL...
-          </p>
+          <div className="mt-6 w-full max-w-3xl rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 w-36 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="h-3 w-3/4 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="h-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
+            </div>
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Shortening URL...
+            </p>
+          </div>
         )}
 
         {error && (
