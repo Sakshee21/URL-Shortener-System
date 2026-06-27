@@ -1,28 +1,35 @@
-# URL Shortener System
+# LinkSprint — URL Shortener System
+
+🔗 **Live Demo:** [https://linksprint-landing.onrender.com/](https://linksprint-landing.onrender.com/)
 
 ## Project Overview
-This URL Shortener System is a lightweight web-based application that allows users to convert long URLs into short, easy-to-share links. The system also provides basic analytics for users to track how often their shortened URLs are accessed. An administrative view is also included to monitor overall system usage.
+LinkSprint is a full-stack URL shortening platform that allows users to convert long URLs into short, easy-to-share links. It provides per-link and account-level analytics, URL safety scanning, link preview pages, and an administrative dashboard for platform-wide monitoring. The app is live and deployed on Render.
 
 ## Problem It Solves
-Long URLs are difficult to share, remember, and manage, especially on social media platforms, messaging applications, and printed media. Existing URL shortening services often provide more complexity than required for basic use cases. There is a need for a simple, reliable, and easy-to-use URL shortening solution with minimal analytics.
+Long URLs are difficult to share, remember, and manage, especially on social media platforms, messaging applications, and printed media. Existing URL shortening services often provide more complexity than required for basic use cases. There is a need for a simple, reliable, and easy-to-use URL shortening solution with meaningful analytics and safety checks built in.
 
 ## Target Users (Personas)
 - **Regular User**:  
-  Individuals who want to shorten URLs and view analytics related to their own links, such as the number of times a link is accessed.
+  Individuals who want to shorten URLs, manage their links, and view analytics such as click counts, unique visitors, and time-based trends.
 
 - **Administrator**:  
-  A system supervisor who monitors overall usage, system activity, and link statistics across all users.
+  A system supervisor who monitors overall platform usage, manages user accounts, and views system-wide link and click statistics.
 
 ## Vision Statement
-To provide a simple, efficient, and user-friendly URL shortening platform that ensures reliable redirection and basic analytics for users and administrators.
+To provide a simple, efficient, and user-friendly URL shortening platform that ensures reliable redirection, actionable analytics, and safety-aware link previews for users and administrators.
 
 ## Key Features
-- Convert long URLs into unique shortened URLs  
-- Redirect users reliably to the original URL  
-- User authentication and personalized dashboards  
-- Analytics for shortened URLs (click count, creation date)  
-- Administrative dashboard for overall system analytics  
-- Clean and intuitive user interface  
+- Convert long URLs into unique shortened URLs
+- Redirect users reliably to the original URL
+- URL safety scanning with risk level and risk score per link
+- Link preview page with page title, description, favicon, and preview image
+- User authentication (JWT) with role-based routing (user vs admin)
+- Personalized dashboards with link management (activate / deactivate / delete)
+- Per-link and account-level analytics (click count, unique visitors, clicks over time, device & browser breakdown)
+- CSV export of analytics data
+- Administrative dashboard for platform-wide user and link monitoring
+- Dark mode support
+- Loading states throughout the UI for a smooth experience on cold starts
 
 ---
 
@@ -31,7 +38,7 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 ### Backend
 - Python 3.10
 - FastAPI
-- SQLite
+- PostgreSQL (via SQLAlchemy + psycopg2)
 - JWT Authentication
 
 ### Frontend
@@ -56,10 +63,10 @@ To provide a simple, efficient, and user-friendly URL shortening platform that e
 - The project is completed within the planned timeline  
 
 ## Assumptions & Constraints  
-- Deployment is limited to local or controlled environments  
 - Advanced security mechanisms and large-scale optimization are out of scope  
 - The system uses open-source technologies and tools  
 - Development is performed by a single developer  
+- Free-tier Render services may have cold start delays (~30–60s on first request after inactivity)
 
 ---
 
@@ -139,115 +146,101 @@ The frontend is structured using a modular, layered component architecture in Re
 This design improves maintainability by isolating responsibilities within well-defined components, making changes localized and predictable. New features can be added by extending existing modules rather than restructuring the system. The clear separation between layout, UI, and feature logic ensures the application remains scalable and easy to refactor over time.
 
 ---
-##  Prototype Flow Instructions
+## 🖥️ App Flow
 
 ### Public Section
 
 #### Landing Page
 
-- Paste a long URL in the input field.
-- Click **"Shorten"** to simulate generating a short link.
-- Click **"Login"** in the navigation bar to navigate to the Login page.
-- Click **"Register"** to navigate to the Sign Up page.
+- Paste a long URL in the input field and click **"Shorten"** to generate a short link instantly.
+- Click **"Login"** in the navigation bar to go to the Login page.
+- Click **"Register"** to go to the Sign Up page.
 
 ### Authentication Section
 
 #### Sign Up Page
 
 - Enter email, password, and confirm password.
-- Click **"Sign Up"** to simulate account creation.
-- User is redirected to the **User Dashboard** after successful registration.
+- Click **"Sign Up"** to create your account.
+- On success, you are redirected to the **Login** page.
 - Click **"Login"** below the form to navigate to the Login page.
-
 
 #### Login Page
 
-- Enter email and password.
-- Click **"Login"** to simulate authentication.
+- Enter email and password and click **"Login"**.
+- A loading spinner is shown while authenticating.
 
-**Role-Based Routing Simulation:**
+**Role-Based Routing:**
 
 - Standard user login → Redirects to **User Dashboard**
 - Admin login → Redirects to **Admin Panel**
 
+### User Section
 
-###  User Section
-
-####  User Dashboard
+#### User Dashboard
 
 After login, the user lands on the Dashboard.
 
-##### i)Metrics Section
+##### i) Metrics Section
 
-Displays:
+Displays live stats:
 
-- Total Links  
-- Total Clicks  
-- Active Links  
-- Top Link Clicks  
+- Total Links
+- Total Clicks
+- Active Links
+- Top Link Clicks
 
-*(Informational cards — no interaction required)*
-
-
-##### ii)Create New Short Link
+##### ii) Create New Short Link
 
 - Enter a destination URL.
-- Click **"Create Short Link"** to simulate generating a new short link.
-- The newly created link appears in the links table below.
+- Click **"Create Short Link"** to generate a new short link.
+- The newly created link appears in the links table below, along with its risk level and preview metadata.
 
-
-##### iii)Your Links Table
-
-Users can:
+##### iii) Your Links Table
 
 - Click **All / Active / Inactive** tabs to filter links.
-- Click the copy icon beside a short URL to simulate copying.
-- Click the action menu (three dots) to simulate edit/delete options.
-- Use pagination buttons (**Previous / Next**) to simulate table navigation.
+- Click the copy icon beside a short URL to copy it to clipboard.
+- Activate or deactivate a link using the toggle in the action menu.
+- Delete a link from the action menu.
+- Use pagination buttons (**Previous / Next**) to navigate between pages.
 - Toggle **Dark Mode** in the sidebar.
-- Click **Sign Out** to return to the Landing page.
-
+- Click **Sign Out** to log out and return to the Landing page.
 
 ### Analytics Section
 
-##### i)Analytics Dashboard
+#### Analytics Dashboard
 
 Accessible from sidebar navigation.
 
+##### i) Top Metrics
 
-##### ii)Top Metrics
+Displays real-time stats:
 
-Displays:
+- Total Clicks
+- Unique Visitors
+- Avg. Clicks per Day
+- Last Accessed Link
 
-- Total Clicks  
-- Unique Visitors  
-- Avg. Clicks per Day  
-- Last Accessed Link  
+##### ii) Clicks Over Time
 
-##### iii)Clicks Over Time
+- Use the filter toggle (**7d / 30d / 90d**) to change the time range for the bar chart.
 
-- Use the filter toggle (**7d / 30d / 90d**) to simulate changing the time range.
+##### iii) Top Performing Links
 
-##### iv)Top Performing Links
+- Displays a ranked list of your highest-performing links by click count.
 
-- Displays ranked list of highest-performing links.
+##### iv) Device & Browser Breakdown
 
+- Donut chart showing device distribution across your link clicks.
+- Horizontal list for browser usage breakdown.
 
-##### v)Geographic Breakdown
+##### v) Recent Activity
 
-- Horizontal bar chart placeholder showing simulated country-based distribution.
+- Live activity log of recent clicks across your links.
 
+##### vi) CSV Export
 
-##### vi)Device & Browser Breakdown
-
-- Donut chart placeholder for device distribution.
-- Horizontal list for browser usage.
-
-
-##### vii)Recent Activity
-
-- Activity log showing simulated recent user interactions.
-
+- Export your full analytics data as a CSV file.
 
 ### Admin Section
 
@@ -255,43 +248,30 @@ Displays:
 
 Accessible only through admin login.
 
-
-##### i)Platform Metrics
+##### i) Platform Metrics
 
 Displays:
 
-- Total Users  
-- Total Links  
-- Total Clicks  
-- Suspended Accounts  
+- Total Users
+- Total Links
+- Total Clicks
+- Suspended Accounts
 
-
-##### ii)User Growth
-
-- Line chart placeholder simulating user growth over time.
-
-
-##### iii)System Events
-
-- Activity list showing simulated system-level actions.
-
-##### iv)User Management Table
+##### ii) User Management Table
 
 Includes:
 
-- User Name  
-- Email  
-- Links  
-- Clicks  
-- Joined Date  
-- Status  
-- Actions  
+- Email
+- Links count
+- Clicks count
+- Joined Date
+- Status (Active / Suspended)
+- Actions
 
-Users can:
+Admins can:
 
-- Use search bar to simulate filtering users.
-- Click status pill to simulate changing status.
-- Click action icons to simulate edit/suspend.
+- Use the search bar to filter users by email.
+- Click the status pill to activate or suspend a user account.
 - Switch between **Users** and **Recent Links** tabs.
 - Navigate using pagination controls.
 
@@ -374,6 +354,7 @@ docker compose up --build
 
 #### Prerequisites
 - Python 3.10+
+- PostgreSQL 14+
 - Git
 
 #### Steps
@@ -382,6 +363,29 @@ docker compose up --build
 git clone https://github.com/Sakshee21/URL-Shortener-System.git
 cd URL-Shortener-System/backend
 ```
+
+#### Set up PostgreSQL
+
+```bash
+# Create database and user
+sudo -u postgres psql
+```
+```sql
+CREATE DATABASE url_shortener;
+CREATE USER myuser WITH PASSWORD 'mypassword';
+GRANT ALL PRIVILEGES ON DATABASE url_shortener TO myuser;
+\q
+```
+
+#### Create a `.env` file in the `backend/` directory
+
+```env
+DATABASE_URL=postgresql://myuser:mypassword@localhost:5432/url_shortener
+SECRET_KEY=your-secret-key
+BASE_URL=http://127.0.0.1:8000
+FRONTEND_BASE_URL=http://localhost:5173
+```
+
 #### Create and Activate Virtual Environment
 ```bash
 python3 -m venv venv
@@ -405,7 +409,8 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 #### Access the Application
-- Application URL: http://localhost:8000
+- Backend API: http://localhost:8000
+- Frontend (run separately): http://localhost:5173
 
 ---
 
@@ -422,17 +427,19 @@ docker compose logs -f        # View container logs
 
 ## 🛠️ Local Development Tools
 
-| Tool        | Purpose                       |
-|-------------|-------------------------------|
-| Python 3.10 | Backend runtime               |
-| FastAPI     | Web framework                 |
-| React       | Frontend UI                   |
-| Docker      | Containerization              |
-| Git         | Version control               |
-| GitHub Actions | CI/CD automation          |
-| Render      | Cloud deployment              |
-| VS Code     | Code editor                   |
-| WSL         | Linux development environment |
+| Tool           | Purpose                       |
+|----------------|-------------------------------|
+| Python 3.10    | Backend runtime               |
+| FastAPI        | Web framework                 |
+| PostgreSQL     | Production database           |
+| React + Vite   | Frontend UI                   |
+| Tailwind CSS   | Styling                       |
+| Docker         | Containerization              |
+| Git            | Version control               |
+| GitHub Actions | CI/CD automation              |
+| Render         | Cloud deployment              |
+| VS Code        | Code editor                   |
+| WSL            | Linux development environment |
 
 ---
 
