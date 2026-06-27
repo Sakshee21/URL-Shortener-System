@@ -1,7 +1,10 @@
 from datetime import datetime
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
-from sqlalchemy import func, inspect, text
+from sqlalchemy import func
 
 from app.core.config import ADMIN_EMAIL, ADMIN_PASSWORD, FRONTEND_BASE_URL
 from app.core.security import hash_password
@@ -35,72 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-def ensure_url_analytics_columns() -> None:
-    inspector = inspect(engine)
-    table_names = inspector.get_table_names()
-
-    if "urls" not in table_names:
-        return
-
-    column_names = {column["name"] for column in inspector.get_columns("urls")}
-
-    with engine.connect() as connection:
-        if "click_count" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN click_count INTEGER NOT NULL DEFAULT 0"))
-
-        if "unique_click_count" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN unique_click_count INTEGER NOT NULL DEFAULT 0"))
-
-        if "last_accessed_at" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN last_accessed_at DATETIME"))
-
-        if "risk_level" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN risk_level VARCHAR NOT NULL DEFAULT 'safe'"))
-
-        if "risk_score" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN risk_score INTEGER NOT NULL DEFAULT 0"))
-
-        if "page_title" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN page_title VARCHAR"))
-
-        if "page_description" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN page_description VARCHAR"))
-
-        if "favicon_url" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN favicon_url VARCHAR"))
-
-        if "preview_image_url" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN preview_image_url VARCHAR"))
-
-        if "is_active" not in column_names:
-            connection.execute(text("ALTER TABLE urls ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"))
-
-        connection.commit()
-
-
-def ensure_user_columns() -> None:
-    inspector = inspect(engine)
-    table_names = inspector.get_table_names()
-
-    if "users" not in table_names:
-        return
-
-    column_names = {column["name"] for column in inspector.get_columns("users")}
-
-    with engine.connect() as connection:
-        if "created_at" not in column_names:
-            connection.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))
-
-        if "is_admin" not in column_names:
-            connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
-
-        if "is_active" not in column_names:
-            connection.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1"))
-
-        connection.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
-        connection.execute(text("UPDATE users SET is_active = 1 WHERE is_active IS NULL"))
-        connection.commit()
 
 
 def seed_admin_user() -> None:
@@ -172,8 +109,6 @@ def reconcile_user_created_at_from_activity() -> None:
 
 
 Base.metadata.create_all(bind=engine)
-ensure_user_columns()
-ensure_url_analytics_columns()
 seed_admin_user()
 reconcile_user_created_at_from_activity()
 
